@@ -46,7 +46,7 @@ fi
 dnf install -y docker git java-17-amazon-corretto-devel python3
 systemctl enable --now docker
 
-APP_DIR=/opt/inline-reidentify
+APP_DIR=/home/ec2-user/inline-reidentify
 rm -rf "$APP_DIR"
 git clone --branch "$GIT_REF" --depth 1 "$GIT_REPO_URL" "$APP_DIR"
 cd "$APP_DIR"

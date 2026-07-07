@@ -11,7 +11,7 @@
 # Usage: inline-reidentify-rebuild [git-ref]
 set -euo pipefail
 
-APP_DIR=/opt/inline-reidentify
+APP_DIR=/home/ec2-user/inline-reidentify
 cd "$APP_DIR"
 
 if [[ -d .git ]]; then

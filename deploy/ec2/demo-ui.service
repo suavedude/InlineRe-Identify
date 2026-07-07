@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 Restart=always
 RestartSec=5
-WorkingDirectory=/opt/inline-reidentify
+WorkingDirectory=/home/ec2-user/inline-reidentify
 # No TOKENIZATION_API_BASE set -- defaults to http://localhost:4051, i.e. *this* instance's own
 # tokenization-api (see README.md's "Browser demo UI" section: the UI always targets whichever
 # machine it's actually running on, no per-environment config needed).
