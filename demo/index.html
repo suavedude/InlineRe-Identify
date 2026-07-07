@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>InlineRe-Identify — Tokenization Demo</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+  h1 { font-size: 1.4rem; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+  .card { border: 1px solid #ddd; border-radius: 8px; padding: 1.25rem; }
+  .card h2 { font-size: 1.05rem; margin-top: 0; }
+  label { display: block; font-size: 0.85rem; font-weight: 600; margin: 0.75rem 0 0.25rem; }
+  input[type=text], input:not([type]), textarea { width: 100%; box-sizing: border-box; padding: 0.4rem; font-size: 0.9rem; border: 1px solid #ccc; border-radius: 4px; }
+  textarea { font-family: ui-monospace, monospace; resize: vertical; }
+  fieldset { margin-top: 0.75rem; border: 1px solid #ccc; border-radius: 4px; }
+  fieldset label { display: inline-block; font-weight: normal; margin: 0.25rem 1rem 0.25rem 0; }
+  button { margin-top: 0.9rem; padding: 0.5rem 0.9rem; font-size: 0.9rem; border: 1px solid #333; border-radius: 4px; background: #1a1a1a; color: #fff; cursor: pointer; }
+  button.secondary { background: #fff; color: #1a1a1a; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .button-row { display: flex; gap: 0.5rem; }
+  .button-row button { flex: 1; }
+  .status { font-size: 0.82rem; white-space: pre-wrap; margin-top: 0.6rem; }
+  .status.ok { color: #0a7a2f; }
+  .status.err { color: #b00020; }
+  .hint { font-size: 0.78rem; color: #666; }
+  #currentConfig { font-size: 0.8rem; color: #444; background: #f6f6f6; padding: 0.5rem 0.7rem; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1>InlineRe-Identify — Tokenization Demo</h1>
+<p id="currentConfig">Loading current configuration&hellip;</p>
+
+<div class="grid">
+  <section class="card" id="cryptoConfigCard">
+    <h2>Crypto Configuration</h2>
+    <p id="remoteTargetNote" class="hint" style="display:none">
+      Target is a remote deployment, not the local docker-compose stack — this panel is
+      disabled because "Apply Configuration" works by running <code>docker compose</code> on
+      this machine, which has no effect on a remote instance. To reconfigure a remote
+      deployment, run <code>deploy/ec2/rebuild.sh</code> (or edit its env file directly) on the
+      target instance itself.
+    </p>
+
+    <label for="cryptoProvider">Crypto Provider</label>
+    <select id="cryptoProvider">
+      <option value="BCFIPS">BCFIPS (Bouncy Castle FIPS, approved-only)</option>
+      <option value="SunJCE">SunJCE (JDK default, no FIPS validation)</option>
+    </select>
+
+    <label for="cipherAlgorithm">Cipher Algorithm</label>
+    <input id="cipherAlgorithm" value="AES-CBC-CTS" />
+
+    <fieldset>
+      <legend>Key Source</legend>
+      <label><input type="radio" name="keySource" value="PLAINTEXT" checked> Plaintext (local dev)</label>
+      <label><input type="radio" name="keySource" value="KMS"> AWS KMS envelope</label>
+    </fieldset>
+
+    <div id="plaintextFields">
+      <label for="dekBase64">Data Encryption Key (Base64)</label>
+      <input id="dekBase64" placeholder="16/24/32-byte AES key, Base64" />
+      <button type="button" class="secondary" id="generateKeyBtn">Generate random AES-128 key</button>
+    </div>
+
+    <div id="kmsFields" style="display:none">
+      <label for="kmsKeyId">KMS Key ID (optional — pins expected CMK)</label>
+      <input id="kmsKeyId" placeholder="alias/inline-reidentify-parent-key" />
+      <label for="dekCiphertextBase64">Data Encryption Key Ciphertext (Base64)</label>
+      <input id="dekCiphertextBase64" placeholder="output of: aws kms encrypt --plaintext ..." />
+      <label for="awsRegion">AWS Region</label>
+      <input id="awsRegion" placeholder="us-east-1" />
+      <p class="hint">Resolved via <code>kms:Decrypt</code> at container startup — normally via an
+      EC2 instance role or a mounted <code>~/.aws</code> profile, neither of which need anything
+      entered below. Only fill these in if using a long-lived IAM user's keys instead (see
+      README.md's "Data encryption key: KMS envelope encryption" section) — left blank, they're
+      not sent at all.</p>
+
+      <label for="awsAccessKeyId">AWS Access Key ID (optional)</label>
+      <input id="awsAccessKeyId" type="password" autocomplete="off" placeholder="AKIA..." />
+      <label for="awsSecretAccessKey">AWS Secret Access Key (optional)</label>
+      <input id="awsSecretAccessKey" type="password" autocomplete="off" placeholder="only needed with an IAM user's static keys" />
+      <label for="awsSessionToken">AWS Session Token (optional)</label>
+      <input id="awsSessionToken" type="password" autocomplete="off" placeholder="only needed with temporary/STS credentials" />
+    </div>
+
+    <button type="button" id="applyBtn">Apply Configuration</button>
+    <p id="configStatus" class="status"></p>
+  </section>
+
+  <section class="card">
+    <h2>Tokenize / Reidentify</h2>
+
+    <label for="plainValues">Plaintext values (one per line)</label>
+    <textarea id="plainValues" rows="7">4111-1111-1111-1111
+jane.doe@example.com</textarea>
+
+    <div class="button-row">
+      <button type="button" id="tokenizeBtn">Tokenize &rarr;</button>
+      <button type="button" class="secondary" id="reidentifyBtn">&larr; Reidentify</button>
+    </div>
+
+    <label for="tokenValues">Token values (one per line)</label>
+    <textarea id="tokenValues" rows="7"></textarea>
+
+    <p id="opStatus" class="status"></p>
+  </section>
+</div>
+
+<section class="card" style="margin-top: 1.5rem;">
+  <h2>Algorithm Config JSON (for the Delphix engine)</h2>
+  <p class="hint">This is the exact JSON shape the Delphix Continuous Compliance engine injects
+    into <code>TokenizationAlgorithm</code> when you add it as a masking algorithm (see
+    README.md) — paste it into the engine's algorithm configuration field. It's independent of
+    this demo's <code>KEY_SOURCE</code>/KMS envelope setup above: the engine plugin only takes
+    the key inline (or via <code>keyFile</code>), never KMS-wrapped. Edit freely; use "Sync from
+    current config" to overwrite with what's in the panel above.</p>
+  <textarea id="engineConfigJson" rows="8" spellcheck="false"></textarea>
+  <div class="button-row">
+    <button type="button" class="secondary" id="syncConfigJsonBtn">Sync from current config</button>
+    <button type="button" class="secondary" id="copyConfigJsonBtn">Copy to clipboard</button>
+  </div>
+  <p id="configJsonStatus" class="status"></p>
+</section>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+function setStatus(el, text, kind) {
+  el.textContent = text;
+  el.className = 'status' + (kind ? ' ' + kind : '');
+}
+
+function linesFrom(textarea) {
+  return textarea.value.split('\n').map(v => v.trim()).filter(v => v.length > 0);
+}
+
+document.querySelectorAll('input[name=keySource]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const isKms = document.querySelector('input[name=keySource]:checked').value === 'KMS';
+    $('kmsFields').style.display = isKms ? 'block' : 'none';
+    $('plaintextFields').style.display = isKms ? 'none' : 'block';
+  });
+});
+
+$('generateKeyBtn').addEventListener('click', () => {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  $('dekBase64').value = btoa(String.fromCharCode(...bytes));
+});
+
+function buildEngineConfigJson() {
+  const keySource = document.querySelector('input[name=keySource]:checked').value;
+  const dataEncryptionKeyBase64 = keySource === 'PLAINTEXT'
+    ? ($('dekBase64').value || '<paste a Base64 AES-128/192/256 key>')
+    : '<the engine plugin has no KMS mode -- paste the plaintext DEK here, not the KMS ciphertext>';
+  return JSON.stringify({
+    dataEncryptionKeyBase64,
+    cryptoProvider: $('cryptoProvider').value,
+    cipherAlgorithm: $('cipherAlgorithm').value,
+  }, null, 2);
+}
+
+function syncConfigJson() {
+  $('engineConfigJson').value = buildEngineConfigJson();
+}
+
+$('syncConfigJsonBtn').addEventListener('click', syncConfigJson);
+
+$('copyConfigJsonBtn').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText($('engineConfigJson').value);
+    setStatus($('configJsonStatus'), 'Copied to clipboard.', 'ok');
+  } catch (e) {
+    setStatus($('configJsonStatus'), 'Copy failed: ' + e, 'err');
+  }
+});
+
+async function refreshStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const s = await res.json();
+    $('cryptoProvider').value = s.cryptoProvider;
+    $('cipherAlgorithm').value = s.cipherAlgorithm;
+    document.querySelector(`input[name=keySource][value=${s.keySource}]`).checked = true;
+    document.querySelector('input[name=keySource]:checked').dispatchEvent(new Event('change'));
+    if (s.keySource === 'KMS') {
+      $('kmsKeyId').value = s.kmsKeyId || '';
+      $('awsRegion').value = s.awsRegion || '';
+    }
+    const badge = s.serverStatus === 'up' ? 'running' : 'NOT reachable';
+    $('currentConfig').textContent =
+      `Target: ${s.tokenizationApiBase} — tokenization-api is ${badge}`;
+
+    $('applyBtn').disabled = !s.isLocalTarget;
+    $('cryptoConfigCard').querySelectorAll('input, select, button').forEach(el => {
+      if (el.id !== 'applyBtn') el.disabled = !s.isLocalTarget;
+    });
+    $('remoteTargetNote').style.display = s.isLocalTarget ? 'none' : 'block';
+
+    syncConfigJson();
+  } catch (e) {
+    $('currentConfig').textContent = 'Could not reach demo backend for status.';
+  }
+}
+
+$('applyBtn').addEventListener('click', async () => {
+  const keySource = document.querySelector('input[name=keySource]:checked').value;
+  const payload = {
+    cryptoProvider: $('cryptoProvider').value,
+    cipherAlgorithm: $('cipherAlgorithm').value,
+    keySource,
+    dataEncryptionKeyBase64: $('dekBase64').value,
+    dataEncryptionKeyCiphertextBase64: $('dekCiphertextBase64').value,
+    kmsKeyId: $('kmsKeyId').value,
+    awsRegion: $('awsRegion').value,
+    awsAccessKeyId: $('awsAccessKeyId').value,
+    awsSecretAccessKey: $('awsSecretAccessKey').value,
+    awsSessionToken: $('awsSessionToken').value,
+  };
+  $('applyBtn').disabled = true;
+  setStatus($('configStatus'), 'Applying — rebuilding tokenization-api container, this can take ~20-30s…', '');
+  try {
+    const res = await fetch('/api/configure', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const body = await res.json();
+    if (res.ok && body.success) {
+      setStatus($('configStatus'), 'Configuration applied.', 'ok');
+      await refreshStatus();
+    } else {
+      setStatus($('configStatus'), 'Failed: ' + body.error, 'err');
+    }
+  } catch (e) {
+    setStatus($('configStatus'), 'Failed: ' + e, 'err');
+  } finally {
+    $('applyBtn').disabled = false;
+  }
+});
+
+function describeErrors(values, body) {
+  if (!body.errors) return '';
+  const lines = [];
+  body.errors.forEach((err, i) => {
+    if (err) lines.push(`  [${i}] "${values[i]}" — ${err}`);
+  });
+  return lines.length ? '\n' + lines.join('\n') : '';
+}
+
+$('tokenizeBtn').addEventListener('click', async () => {
+  const values = linesFrom($('plainValues'));
+  setStatus($('opStatus'), 'Tokenizing…', '');
+  try {
+    const res = await fetch('/api/tokenize', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ values }),
+    });
+    const body = await res.json();
+    if (!res.ok) { setStatus($('opStatus'), 'Failed: ' + (body.error || JSON.stringify(body)), 'err'); return; }
+    $('tokenValues').value = body.results.map(v => v === null ? '' : v).join('\n');
+    setStatus($('opStatus'),
+      `Tokenized ${values.length} value(s), ${body.failureCount} failure(s).` + describeErrors(values, body),
+      body.failureCount > 0 ? 'err' : 'ok');
+  } catch (e) {
+    setStatus($('opStatus'), 'Failed: ' + e, 'err');
+  }
+});
+
+$('reidentifyBtn').addEventListener('click', async () => {
+  const values = linesFrom($('tokenValues'));
+  setStatus($('opStatus'), 'Reidentifying…', '');
+  try {
+    const res = await fetch('/api/reidentify', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ values }),
+    });
+    const body = await res.json();
+    if (!res.ok) { setStatus($('opStatus'), 'Failed: ' + (body.error || JSON.stringify(body)), 'err'); return; }
+    $('plainValues').value = body.results.map(v => v === null ? '' : v).join('\n');
+    setStatus($('opStatus'),
+      `Reidentified ${values.length} value(s), ${body.failureCount} failure(s).` + describeErrors(values, body),
+      body.failureCount > 0 ? 'err' : 'ok');
+  } catch (e) {
+    setStatus($('opStatus'), 'Failed: ' + e, 'err');
+  }
+});
+
+refreshStatus();
+</script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+// Algorithm instance config for TokenizationAlgorithm.
+// Paste this JSON (without comments) into the Delphix masking engine's algorithm
+// configuration UI, or POST it to /masking/api/v5/algorithms/{id} as the
+// algorithmExtension.algorithmConfig field.
+//
+// The same dataEncryptionKeyBase64 / cryptoProvider / cipherAlgorithm must be
+// configured on both the masking job (MASK/TOKENIZE) and any re-identification
+// job (REIDENTIFY), and on any standalone service (Lambda, HTTP server) used for
+// out-of-engine re-identification.
+//
+// Generate a new key (AES-128):  ./scripts/generate-key.sh
+// Generate AES-256 key:          openssl rand -base64 32
+{
+  // Required. Base64-encoded AES key. Valid lengths after decoding:
+  //   16 bytes → AES-128, 24 bytes → AES-192, 32 bytes → AES-256.
+  // Treat this value like a password: store it in a vault (AWS KMS, HashiCorp Vault,
+  // etc.) and inject it at deploy time rather than committing it to source control.
+  // validate() round-trips a probe value through the resolved provider+algorithm+key
+  // at job start, so a wrong key length or unsupported combination fails immediately.
+  "dataEncryptionKeyBase64": "<base64-encoded-aes-key>",
+
+  // Optional. Default: "BCFIPS".
+  // JCE Security provider id, resolved via CryptoProviderRegistry (ServiceLoader).
+  // Built-in values:
+  //   "BCFIPS"  — Bouncy Castle FIPS provider (approved-only mode). Default.
+  //               Requires bc-fips-*.jar on the classpath.
+  //   "SunJCE"  — JDK built-in provider, no extra dependency, no FIPS validation.
+  // Must match between masking and re-identification.
+  "cryptoProvider": "BCFIPS",
+
+  // Optional. Default: "AES-CBC-CTS".
+  // Tokenization scheme id, resolved via TokenizationSchemeRegistry (ServiceLoader).
+  // Built-in values:
+  //   "AES-CBC-CTS" — AES-CBC with ciphertext stealing (CS3) for inputs ≥16 bytes;
+  //                   falls back to AES-CBC/PKCS5Padding for shorter inputs. Fixed
+  //                   all-zero IV (deterministic: equal inputs → equal tokens).
+  //                   NOTE: CTS padding name is Bouncy Castle-specific; the long-value
+  //                   path requires "BCFIPS". The short-value fallback is portable.
+  // New schemes can be added as ServiceLoader implementations without touching this module.
+  "cipherAlgorithm": "AES-CBC-CTS"
+}

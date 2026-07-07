@@ -1,0 +1,18 @@
+# Redshift Lambda UDF handler, packaged for AWS's Java Lambda base image so the exact same
+# image runs both locally (via its built-in Runtime Interface Emulator on port 8080) and in
+# real AWS Lambda -- the request/response contract and code path never change between the two.
+#
+# For databases other than Redshift, see Dockerfile.http-server instead.
+#
+# Build: docker compose build   (see docker-compose.yml for the tokenize-udf / reidentify-udf
+# services, which set UDF_OPERATION and KEY_SOURCE to select behavior at runtime.)
+#
+# Requires `./gradlew lambdaJar rawCryptoLibs` to have run first.
+FROM public.ecr.aws/lambda/java:17
+
+COPY build/libs/inlineReIdentify-lambda.jar ${LAMBDA_TASK_ROOT}/lib/
+# bc-fips as its own untouched jar -- see the rawCryptoLibs comment in build.gradle for why it
+# can't be merged into inlineReIdentify-lambda.jar above.
+COPY build/raw-crypto-libs/*.jar ${LAMBDA_TASK_ROOT}/lib/
+
+CMD ["com.inlinereidentify.masking.tokenization.lambda.RedshiftUdfHandler::handleRequest"]

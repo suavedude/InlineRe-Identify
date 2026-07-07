@@ -1,0 +1,26 @@
+// Algorithm instance config for FullyHomomorphicEncryptionAlgorithm.
+// Paste this JSON (without comments) into the Delphix masking engine's algorithm
+// configuration UI, or POST it to /masking/api/v5/algorithms/{id} as the
+// algorithmExtension.algorithmConfig field.
+//
+// The same secretPassphrase / securityProfile must be supplied to the standalone
+// decrypt CLI (FheReidentifyCli) when re-identifying tokens outside the engine:
+//
+//   export FHE_SECRET_PASSPHRASE="<your-passphrase>"
+//   java -jar build/libs/inlineFhe.jar --profile COMPACT --in tokens.txt
+{
+  // Required. Used to deterministically derive the DGHV secret key p.
+  // Any non-empty string. Treat it like a password: keep it out of source control,
+  // rotate it by re-masking with the new passphrase, and distribute it out-of-band
+  // (vault, KMS secret, env var) rather than in this file.
+  "secretPassphrase": "<your-passphrase>",
+
+  // Optional. Default: COMPACT.
+  // COMPACT  — ~256-byte ciphertexts per bit, faster, smaller tokens. Suitable for
+  //            evaluation and non-production masking jobs.
+  // HARDENED — ~1536-byte ciphertexts per bit, slower, much larger tokens. Closer
+  //            to literature-recommended DGHV parameter sizes.
+  // Must match between the masking job and any re-identification job or CLI invocation.
+  // Changing this value makes all existing tokens unreadable.
+  "securityProfile": "COMPACT"
+}

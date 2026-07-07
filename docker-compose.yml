@@ -1,0 +1,117 @@
+# Local dev stack:
+#  - tokenize-udf / reidentify-udf: the Redshift Lambda UDF handler under AWS's local Runtime
+#    Interface Emulator (one container per Redshift external function, distinguished only by
+#    UDF_OPERATION -- the deployment shape this mirrors in real AWS).
+#  - tokenization-api: the plain REST API for every other database (Postgres, MySQL, Snowflake
+#    External Functions, BigQuery Remote Functions, application code) -- see README.md.
+#  - postgres: local Postgres standing in for a real database's tables so there's data to
+#    round-trip against.
+#
+# NOTE: Postgres itself cannot invoke a Lambda (CREATE EXTERNAL FUNCTION ... LAMBDA is a
+# Redshift-only feature) -- it's here purely to hold sample plaintext data. scripts/test-udf.sh
+# and scripts/test-http-api.sh read rows from it and call the respective endpoints directly to
+# exercise each entry point's wire contract. See README.md for the real Redshift DDL and other
+# databases' integration patterns.
+#
+# Default KEY_SOURCE=PLAINTEXT below is for local dev only, so this stack runs without AWS
+# credentials. Set KEY_SOURCE=KMS (and mount ~/.aws + set AWS_REGION) to test the envelope
+# encryption path against a real KMS key -- see README.md.
+# CRYPTO_PROVIDER/CIPHER_ALGORITHM default to the same built-ins TokenizationAlgorithm defaults
+# to (BCFIPS/AES-CBC-CTS); override in .env to try e.g. CRYPTO_PROVIDER=SunJCE (works for
+# short/PKCS5Padding values -- see the provider portability note in README.md).
+services:
+  tokenize-udf:
+    build:
+      context: .
+      dockerfile: Dockerfile.lambda
+    environment:
+      UDF_OPERATION: TOKENIZE
+      KEY_SOURCE: PLAINTEXT
+      # Deliberately a soft default (not `:?`/required): compose interpolates every service's
+      # environment block before starting *any* of them, so a hard requirement here would break
+      # `docker compose up -d --build tokenization-api` (e.g. the demo UI's "Apply Configuration"
+      # switching tokenization-api to KEY_SOURCE=KMS, which blanks this var) even though these
+      # two services weren't being started at all. Missing it here now fails inside the
+      # container instead (DataEncryptionKeySource's own requireEnv check), same tradeoff
+      # tokenization-api below already made.
+      DATA_ENCRYPTION_KEY_BASE64: ${DATA_ENCRYPTION_KEY_BASE64:-}
+      CRYPTO_PROVIDER: ${CRYPTO_PROVIDER:-BCFIPS}
+      CIPHER_ALGORITHM: ${CIPHER_ALGORITHM:-AES-CBC-CTS}
+    ports:
+      - "9001:8080"
+
+  reidentify-udf:
+    build:
+      context: .
+      dockerfile: Dockerfile.lambda
+    environment:
+      UDF_OPERATION: REIDENTIFY
+      KEY_SOURCE: PLAINTEXT
+      # Deliberately a soft default (not `:?`/required): compose interpolates every service's
+      # environment block before starting *any* of them, so a hard requirement here would break
+      # `docker compose up -d --build tokenization-api` (e.g. the demo UI's "Apply Configuration"
+      # switching tokenization-api to KEY_SOURCE=KMS, which blanks this var) even though these
+      # two services weren't being started at all. Missing it here now fails inside the
+      # container instead (DataEncryptionKeySource's own requireEnv check), same tradeoff
+      # tokenization-api below already made.
+      DATA_ENCRYPTION_KEY_BASE64: ${DATA_ENCRYPTION_KEY_BASE64:-}
+      CRYPTO_PROVIDER: ${CRYPTO_PROVIDER:-BCFIPS}
+      CIPHER_ALGORITHM: ${CIPHER_ALGORITHM:-AES-CBC-CTS}
+    ports:
+      - "9002:8080"
+
+  tokenization-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.http-server
+    environment:
+      # Unlike tokenize-udf/reidentify-udf above (pinned to KEY_SOURCE=PLAINTEXT for the
+      # local-only Lambda RIE path), this service reads KEY_SOURCE from .env so the demo UI
+      # (demo/server.py) can switch it between PLAINTEXT and KMS and rebuild just this
+      # container.
+      KEY_SOURCE: ${KEY_SOURCE:-PLAINTEXT}
+      DATA_ENCRYPTION_KEY_BASE64: ${DATA_ENCRYPTION_KEY_BASE64:-}
+      DATA_ENCRYPTION_KEY_CIPHERTEXT_BASE64: ${DATA_ENCRYPTION_KEY_CIPHERTEXT_BASE64:-}
+      KMS_KEY_ID: ${KMS_KEY_ID:-}
+      AWS_REGION: ${AWS_REGION:-}
+      # Alternative to the ~/.aws mount below: static/temporary credentials via the AWS SDK's
+      # default env-var credential provider (checked before the mounted ~/.aws profile). Leave
+      # unset to use the mount instead -- AWS_SESSION_TOKEN only applies to temporary/STS
+      # credentials (assumed-role, SSO), not a long-lived IAM user's static keys.
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      CRYPTO_PROVIDER: ${CRYPTO_PROVIDER:-BCFIPS}
+      CIPHER_ALGORITHM: ${CIPHER_ALGORITHM:-AES-CBC-CTS}
+      PORT: "4051"
+    volumes:
+      # Read-only mount so KEY_SOURCE=KMS can resolve real AWS credentials from the host;
+      # unused (and harmless if absent) under KEY_SOURCE=PLAINTEXT or when the AWS_* env vars
+      # above are set instead.
+      - ${HOME}/.aws:/root/.aws:ro
+    ports:
+      - "4051:4051"
+
+  postgres:
+    build:
+      context: ./docker/postgres
+    environment:
+      POSTGRES_USER: inlinereidentify
+      POSTGRES_PASSWORD: inlinereidentify
+      POSTGRES_DB: inlinereidentify
+    depends_on:
+      - tokenization-api
+    ports:
+      - "5432:5432"
+    volumes:
+      # init.sql/udf.sql are baked into the image itself now (see docker/postgres/Dockerfile),
+      # not bind-mounted -- rebuild this service after editing either file.
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inlinereidentify"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

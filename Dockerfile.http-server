@@ -1,0 +1,16 @@
+# Plain REST API for tokenize/reidentify, for any database or application that isn't Redshift
+# and can't invoke a Lambda directly -- see README.md's "Other databases" section. A normal
+# long-running JVM process, not an AWS Lambda base image: no RIE, no ${LAMBDA_TASK_ROOT}.
+#
+# Build: docker compose build   (see docker-compose.yml for the tokenization-api service)
+#
+# Requires `./gradlew httpServerJar rawCryptoLibs` to have run first.
+FROM eclipse-temurin:17-jre
+
+COPY build/libs/inlineReIdentify-http-server.jar /app/lib/
+# bc-fips as its own untouched jar -- see the rawCryptoLibs comment in build.gradle for why it
+# can't be merged into inlineReIdentify-http-server.jar above.
+COPY build/raw-crypto-libs/*.jar /app/lib/
+
+EXPOSE 8081
+CMD ["java", "-cp", "/app/lib/*", "com.inlinereidentify.masking.tokenization.http.TokenizationHttpServer"]

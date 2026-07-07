@@ -1,0 +1,149 @@
+/*
+ * Copyright (c) 2020, 2025 by Delphix. All rights reserved.
+ */
+buildscript {
+    repositories {
+        maven {
+            url 'https://artifactory.delphix.com/artifactory/maven-central'
+        }
+        mavenLocal()
+    }
+    dependencies {
+        classpath files("${project.rootDir}/libs/masking-extensibility-api-${maskingExtensibilityVer}.jar")
+        classpath files("${project.rootDir}/libs/semantic-version-${semanticVer}.jar")
+    }
+}
+
+import com.delphix.masking.api.plugin.utils.PluginMetadata
+
+apply plugin: 'idea'
+apply plugin: 'java'
+
+repositories {
+    maven {
+        url 'https://artifactory.delphix.com/artifactory/maven-central'
+    }
+    mavenLocal()
+    mavenCentral()
+}
+
+jar {
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    includeEmptyDirs = false
+
+    manifest {
+        attributes(
+                'Main-Class'                           : 'com.inlinereidentify.masking.fhe.cli.FheReidentifyCli',
+                (PluginMetadata.PLUGIN_NAME_KEY)       : "inlineFhe",
+                (PluginMetadata.AUTHOR_NAME_KEY)       : "Hims",
+                (PluginMetadata.PLUGIN_VERSION_KEY)    : "1.0",
+                (PluginMetadata.EXTENSIBILITY_API_VERSION_KEY): "${maskingExtensibilityVer}",
+                'Build-Timestamp': new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+                'Created-By'     : "Gradle ${gradle.gradleVersion}",
+                'Build-Jdk'      : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
+                'Build-OS'       : "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}",
+        )
+    }
+}
+
+configurations {
+    // Runtime deps for the standalone Redshift Lambda UDF jar only -- kept out of
+    // `implementation` so they never leak into the Delphix plugin jar built by the `jar` task.
+    lambdaRuntime
+    // Runtime deps for the standalone plain-HTTP-API jar only, same reasoning.
+    httpServerRuntime
+    // bc-fips must NOT be merged into a fat jar: it self-checks its own module integrity at
+    // class-load time by hashing the jar it's loaded from and comparing against a checksum
+    // baked in at build time. Repackaged into any other jar, that hash no longer matches and
+    // every crypto call fails with FipsOperationError: "Module checksum failed". So it ships
+    // as its own untouched jar file, placed alongside lambdaJar/httpServerJar in lib/ (see the
+    // Dockerfiles) -- multiple jars on one classpath doesn't change how the handler code sees
+    // it. Shared by both standalone jars, hence its own configuration rather than living under
+    // lambdaRuntime/httpServerRuntime.
+    rawCryptoLibs
+}
+
+dependencies {
+    compileOnly fileTree(dir: "${project.rootDir}/libs", include: '*.jar')
+
+    implementation 'org.bouncycastle:bc-fips:2.1.2'
+    // Used by TokenizationAlgorithm's keyFile config field (KeyFileResolver parses the uploaded
+    // JSON key file) -- implementation, not compileOnly, so it's bundled into inlineFhe.jar the
+    // same way bc-fips is: the Delphix engine's own runtime classpath isn't guaranteed to expose
+    // jackson-databind to plugin code (only jackson-annotations is used compile-time-only by the
+    // sample algorithms this SDK ships), so this must be self-contained.
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+
+    // Lambda/HTTP-server handler classes compile against these; provided by the fat jars built
+    // below, never bundled into the Delphix plugin jar.
+    compileOnly 'com.amazonaws:aws-lambda-java-core:1.2.3'
+    compileOnly 'software.amazon.awssdk:kms:2.29.1'
+
+    rawCryptoLibs 'org.bouncycastle:bc-fips:2.1.2'
+
+    lambdaRuntime 'com.amazonaws:aws-lambda-java-core:1.2.3'
+    lambdaRuntime('software.amazon.awssdk:kms:2.29.1') {
+        // Pull in the lightweight synchronous HTTP client instead of the default Apache
+        // client -- smaller jar, faster cold start, and it's what AWS recommends for Lambda.
+        exclude group: 'software.amazon.awssdk', module: 'apache-client'
+        exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+    }
+    lambdaRuntime 'software.amazon.awssdk:url-connection-client:2.29.1'
+
+    httpServerRuntime 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    httpServerRuntime('software.amazon.awssdk:kms:2.29.1') {
+        exclude group: 'software.amazon.awssdk', module: 'apache-client'
+        exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+    }
+    httpServerRuntime 'software.amazon.awssdk:url-connection-client:2.29.1'
+
+    testImplementation fileTree(dir: "${project.rootDir}/libs", include: '*.jar')
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// Fat jar for the Redshift Lambda UDF handler (com.inlinereidentify.masking.tokenization.lambda),
+// deployed separately from the Delphix plugin jar above -- see Dockerfile. Deliberately excludes
+// bc-fips (see rawCryptoLibs above); the rawCryptoLibs task copies that in unmodified alongside it.
+task lambdaJar(type: Jar) {
+    archiveBaseName = 'inlineReIdentify-lambda'
+    from sourceSets.main.output
+    from {
+        configurations.lambdaRuntime.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/*.EC'
+    includeEmptyDirs = false
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes('Main-Class': 'com.inlinereidentify.masking.tokenization.lambda.RedshiftUdfHandler')
+    }
+}
+
+// Fat jar for the plain HTTP API (com.inlinereidentify.masking.tokenization.http) -- the
+// database-agnostic entry point. Same bc-fips exclusion/reasoning as lambdaJar.
+task httpServerJar(type: Jar) {
+    archiveBaseName = 'inlineReIdentify-http-server'
+    from sourceSets.main.output
+    from {
+        configurations.httpServerRuntime.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/*.EC'
+    includeEmptyDirs = false
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes('Main-Class': 'com.inlinereidentify.masking.tokenization.http.TokenizationHttpServer')
+    }
+}
+
+// bc-fips, copied byte-for-byte (no repackaging) -- see the rawCryptoLibs comment above. Shared
+// by lambdaJar's and httpServerJar's Dockerfiles.
+task rawCryptoLibs(type: Copy) {
+    from configurations.rawCryptoLibs
+    into "$buildDir/raw-crypto-libs"
+}
