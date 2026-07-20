@@ -3,3 +3,10 @@ bin/
 .gradle/
 .env
 **/.DS_Store
+__pycache__/
+# Holds a plaintext DEK -- see scripts/sync-engine-config.sh.
+engine-keyfile.json
+# Local Environments/Applications demo store -- see demo/server.py.
+demo/environments.json
+# Claude Code's local tool config (permission allowlists etc.) -- not part of the product.
+.claude/

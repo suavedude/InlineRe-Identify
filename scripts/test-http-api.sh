@@ -39,7 +39,7 @@ NAMES=()
 while IFS= read -r line; do
     [[ -n "$line" ]] && NAMES+=("$line")
 done < <(docker compose exec -T postgres \
-    psql -U inlinereidentify -d inlinereidentify -t -A -c "SELECT full_name FROM customers ORDER BY id;")
+    psql -U dynamicmasking -d dynamicmasking -t -A -c "SELECT full_name FROM customers ORDER BY id;")
 
 echo "Original values:"
 printf '  %s\n' "${NAMES[@]}"

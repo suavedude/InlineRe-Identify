@@ -1,0 +1,10 @@
+com.delphix.dynamicmasking.onewaymasking.FirstNameLookupSchemeFactory
+com.delphix.dynamicmasking.onewaymasking.LastNameLookupSchemeFactory
+com.delphix.dynamicmasking.onewaymasking.DateShiftSchemeFactory
+com.delphix.dynamicmasking.onewaymasking.SegmentMappingSchemeFactory
+com.delphix.dynamicmasking.onewaymasking.StringRedactSchemeFactory
+com.delphix.dynamicmasking.onewaymasking.NumberRedactSchemeFactory
+com.delphix.dynamicmasking.onewaymasking.DateRedactSchemeFactory
+com.delphix.dynamicmasking.onewaymasking.CreditCardMaskSchemeFactory
+com.delphix.dynamicmasking.onewaymasking.FullNameMaskSchemeFactory
+com.delphix.dynamicmasking.onewaymasking.EmailMaskSchemeFactory

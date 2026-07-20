@@ -1,0 +1,16 @@
+# SQL Interception proxy: runs an arbitrary SELECT against the sample Postgres and transparently
+# masks known-sensitive columns in the result -- see README.md's "SQL Interception" section.
+# A normal long-running JVM process, same shape as Dockerfile.http-server.
+#
+# Build: docker compose build   (see docker-compose.yml for the sql-interception-proxy service)
+#
+# Requires `./gradlew sqlproxyJar rawCryptoLibs` to have run first.
+FROM eclipse-temurin:17-jre
+
+COPY build/libs/DynamicMasking-sqlproxy.jar /app/lib/
+# bc-fips as its own untouched jar -- see the rawCryptoLibs comment in build.gradle for why it
+# can't be merged into DynamicMasking-sqlproxy.jar above.
+COPY build/raw-crypto-libs/*.jar /app/lib/
+
+EXPOSE 4053
+CMD ["java", "-cp", "/app/lib/*", "com.delphix.dynamicmasking.tokenization.sqlproxy.SqlInterceptionHttpServer"]

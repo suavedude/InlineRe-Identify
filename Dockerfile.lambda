@@ -10,9 +10,9 @@
 # Requires `./gradlew lambdaJar rawCryptoLibs` to have run first.
 FROM public.ecr.aws/lambda/java:17
 
-COPY build/libs/inlineReIdentify-lambda.jar ${LAMBDA_TASK_ROOT}/lib/
+COPY build/libs/DynamicMasking-lambda.jar ${LAMBDA_TASK_ROOT}/lib/
 # bc-fips as its own untouched jar -- see the rawCryptoLibs comment in build.gradle for why it
-# can't be merged into inlineReIdentify-lambda.jar above.
+# can't be merged into DynamicMasking-lambda.jar above.
 COPY build/raw-crypto-libs/*.jar ${LAMBDA_TASK_ROOT}/lib/
 
-CMD ["com.inlinereidentify.masking.tokenization.lambda.RedshiftUdfHandler::handleRequest"]
+CMD ["com.delphix.dynamicmasking.tokenization.lambda.RedshiftUdfHandler::handleRequest"]

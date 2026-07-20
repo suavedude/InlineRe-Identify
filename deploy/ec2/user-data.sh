@@ -35,6 +35,13 @@ DEPLOY_DEMO_POSTGRES="${DEPLOY_DEMO_POSTGRES:-false}"
 # always-on web UI, so leave this false unless you actually want it exposed here rather than run
 # from your own machine (see README.md's "Browser demo UI" section).
 DEPLOY_DEMO_UI="${DEPLOY_DEMO_UI:-false}"
+
+# Where to check out the repo on this instance. No hardcoded default is baked into the systemd
+# unit files themselves (demo-ui.service ships with a __APP_DIR__ placeholder, substituted below)
+# so this can be changed here without editing anything else -- e.g. for a non-ec2-user AMI/image.
+# $HOME rather than a hardcoded /home/ec2-user -- resolves correctly whether this runs as ec2-user
+# on EC2 or as any local user testing this script on a Mac/other machine.
+APP_DIR="${APP_DIR:-$HOME/dynamicmasking}"
 # -----------------------------------------------------------------------------
 
 if [[ "$GIT_REPO_URL" == "CHANGE_ME" || "$DATA_ENCRYPTION_KEY_CIPHERTEXT_BASE64" == "CHANGE_ME" ]]; then
@@ -46,16 +53,15 @@ fi
 dnf install -y docker git java-17-amazon-corretto-devel python3
 systemctl enable --now docker
 
-APP_DIR=/home/ec2-user/inline-reidentify
 rm -rf "$APP_DIR"
 git clone --branch "$GIT_REF" --depth 1 "$GIT_REPO_URL" "$APP_DIR"
 cd "$APP_DIR"
 
 ./gradlew httpServerJar rawCryptoLibs
-docker build -f Dockerfile.http-server -t inline-reidentify-tokenization-api:latest .
+docker build -f Dockerfile.http-server -t dynamicmasking-tokenization-api:latest .
 
-mkdir -p /etc/inline-reidentify
-cat > /etc/inline-reidentify/tokenization-api.env <<EOF
+mkdir -p /etc/dynamicmasking
+cat > /etc/dynamicmasking/tokenization-api.env <<EOF
 KEY_SOURCE=KMS
 DATA_ENCRYPTION_KEY_CIPHERTEXT_BASE64=${DATA_ENCRYPTION_KEY_CIPHERTEXT_BASE64}
 KMS_KEY_ID=${KMS_KEY_ID}
@@ -64,23 +70,29 @@ CRYPTO_PROVIDER=${CRYPTO_PROVIDER}
 CIPHER_ALGORITHM=${CIPHER_ALGORITHM}
 PORT=${PORT}
 EOF
-chmod 600 /etc/inline-reidentify/tokenization-api.env
+chmod 600 /etc/dynamicmasking/tokenization-api.env
 
 install -m 0644 "$APP_DIR/deploy/ec2/tokenization-api.service" /etc/systemd/system/tokenization-api.service
-install -m 0755 "$APP_DIR/deploy/ec2/rebuild.sh" /usr/local/bin/inline-reidentify-rebuild
+# rebuild.sh has its own APP_DIR default -- substitute here too so `dynamicmasking-rebuild`
+# still targets the right checkout if this instance used a non-default APP_DIR.
+sed "s#^APP_DIR=.*#APP_DIR=${APP_DIR}#" "$APP_DIR/deploy/ec2/rebuild.sh" > /usr/local/bin/dynamicmasking-rebuild
+chmod 0755 /usr/local/bin/dynamicmasking-rebuild
 
 systemctl daemon-reload
 systemctl enable --now tokenization-api
 
 if [[ "$DEPLOY_DEMO_POSTGRES" == "true" ]]; then
-    docker build -t inline-reidentify-postgres:latest docker/postgres/
+    docker build -t dynamicmasking-postgres:latest docker/postgres/
     install -m 0644 "$APP_DIR/deploy/ec2/postgres.service" /etc/systemd/system/postgres.service
     systemctl daemon-reload
     systemctl enable --now postgres
 fi
 
 if [[ "$DEPLOY_DEMO_UI" == "true" ]]; then
-    install -m 0644 "$APP_DIR/deploy/ec2/demo-ui.service" /etc/systemd/system/demo-ui.service
+    # demo-ui.service ships with an __APP_DIR__ placeholder (no path baked into the repo) --
+    # substitute the resolved checkout location in as this instance's WorkingDirectory.
+    sed "s#__APP_DIR__#${APP_DIR}#" "$APP_DIR/deploy/ec2/demo-ui.service" > /etc/systemd/system/demo-ui.service
+    chmod 0644 /etc/systemd/system/demo-ui.service
     systemctl daemon-reload
     systemctl enable --now demo-ui
 fi

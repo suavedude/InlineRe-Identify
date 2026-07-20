@@ -7,10 +7,10 @@
 # Requires `./gradlew httpServerJar rawCryptoLibs` to have run first.
 FROM eclipse-temurin:17-jre
 
-COPY build/libs/inlineReIdentify-http-server.jar /app/lib/
+COPY build/libs/DynamicMasking-http-server.jar /app/lib/
 # bc-fips as its own untouched jar -- see the rawCryptoLibs comment in build.gradle for why it
-# can't be merged into inlineReIdentify-http-server.jar above.
+# can't be merged into DynamicMasking-http-server.jar above.
 COPY build/raw-crypto-libs/*.jar /app/lib/
 
-EXPOSE 8081
-CMD ["java", "-cp", "/app/lib/*", "com.inlinereidentify.masking.tokenization.http.TokenizationHttpServer"]
+EXPOSE 4051
+CMD ["java", "-cp", "/app/lib/*", "com.delphix.dynamicmasking.tokenization.http.TokenizationHttpServer"]

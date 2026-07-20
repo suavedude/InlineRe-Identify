@@ -1,12 +1,12 @@
 [Unit]
-Description=InlineRe-Identify Browser Demo UI (demo/server.py)
+Description=DynamicMasking Browser Demo UI (demo/server.py)
 After=network-online.target tokenization-api.service
 Wants=network-online.target
 
 [Service]
 Restart=always
 RestartSec=5
-WorkingDirectory=/home/ec2-user/inline-reidentify
+WorkingDirectory=__APP_DIR__
 # No TOKENIZATION_API_BASE set -- defaults to http://localhost:4051, i.e. *this* instance's own
 # tokenization-api (see README.md's "Browser demo UI" section: the UI always targets whichever
 # machine it's actually running on, no per-environment config needed).

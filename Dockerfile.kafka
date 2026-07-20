@@ -1,0 +1,16 @@
+# Kafka masking bridge for the "Streaming" demo: consumes an input topic, tokenizes configured
+# sensitive fields, and produces the result to an output topic -- see README.md's "Streaming"
+# section. A normal long-running JVM process, same shape as Dockerfile.http-server.
+#
+# Build: docker compose build   (see docker-compose.yml for the kafka-masking-bridge service)
+#
+# Requires `./gradlew kafkaJar rawCryptoLibs` to have run first.
+FROM eclipse-temurin:17-jre
+
+COPY build/libs/DynamicMasking-kafka.jar /app/lib/
+# bc-fips as its own untouched jar -- see the rawCryptoLibs comment in build.gradle for why it
+# can't be merged into DynamicMasking-kafka.jar above.
+COPY build/raw-crypto-libs/*.jar /app/lib/
+
+EXPOSE 4052
+CMD ["java", "-cp", "/app/lib/*", "com.delphix.dynamicmasking.tokenization.kafka.KafkaMaskingBridge"]

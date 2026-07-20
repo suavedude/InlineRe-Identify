@@ -7,7 +7,7 @@
 // decrypt CLI (FheReidentifyCli) when re-identifying tokens outside the engine:
 //
 //   export FHE_SECRET_PASSPHRASE="<your-passphrase>"
-//   java -jar build/libs/inlineFhe.jar --profile COMPACT --in tokens.txt
+//   java -jar build/libs/DynamicMasking.jar --profile COMPACT --in tokens.txt
 {
   // Required. Used to deterministically derive the DGHV secret key p.
   // Any non-empty string. Treat it like a password: keep it out of source control,

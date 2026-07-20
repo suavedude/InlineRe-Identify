@@ -4,7 +4,7 @@
 #
 # For a real KMS-backed deployment (KEY_SOURCE=KMS), wrap this same DEK under your parent CMK
 # instead of using the plaintext form:
-#   aws kms encrypt --key-id alias/inline-reidentify-parent-key \
+#   aws kms encrypt --key-id alias/dynamicmasking-parent-key \
 #       --plaintext fileb://<(echo -n "$DEK_BASE64" | base64 -d) \
 #       --query CiphertextBlob --output text
 # and set DATA_ENCRYPTION_KEY_CIPHERTEXT_BASE64 to that output instead.

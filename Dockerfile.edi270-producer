@@ -1,0 +1,16 @@
+# Synthetic EDI270 event producer -- see edi270_producer.py and README.md's "Streaming" section.
+# A source topic only (no masking here); the Streaming environment's Rule Sets tab reads sample
+# messages from it via kafka-ui-proxy to demo the algorithm-mapping UI against real JSON.
+FROM python:3.12-slim
+
+WORKDIR /app
+COPY requirements-edi270-producer.txt .
+RUN pip install --no-cache-dir -r requirements-edi270-producer.txt
+
+COPY edi270_producer.py .
+# Needs the bundled name lists FirstNameLookupSchemeFactory/LastNameLookupSchemeFactory also use.
+COPY src/main/resources/com/delphix/dynamicmasking/onewaymasking/first-names.txt \
+     src/main/resources/com/delphix/dynamicmasking/onewaymasking/last-names.txt \
+     src/main/resources/com/delphix/dynamicmasking/onewaymasking/
+
+CMD ["python", "edi270_producer.py"]

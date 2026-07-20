@@ -1,5 +1,5 @@
 [Unit]
-Description=InlineRe-Identify Sample Postgres (demo data + tokenize()/reidentify() SQL functions)
+Description=DynamicMasking Sample Postgres (demo data + tokenize()/reidentify() SQL functions)
 After=docker.service network-online.target tokenization-api.service
 Requires=docker.service
 Wants=network-online.target
@@ -12,18 +12,18 @@ RestartSec=5
 # plain `docker run` container on host networking won't) to the host loopback, where
 # tokenization-api is itself listening thanks to its own --network host.
 #
-# inline-reidentify-pgdata is a named Docker volume (not a host bind mount), so data survives
+# dynamicmasking-pgdata is a named Docker volume (not a host bind mount), so data survives
 # container recreation and instance reboots without depending on any particular repo checkout
 # path -- init.sql/udf.sql are baked into the image (see docker/postgres/Dockerfile), not mounted.
 ExecStartPre=-/usr/bin/docker rm -f postgres
 ExecStart=/usr/bin/docker run --rm --name postgres \
   --network host \
   --add-host=tokenization-api:127.0.0.1 \
-  -e POSTGRES_USER=inlinereidentify \
-  -e POSTGRES_PASSWORD=inlinereidentify \
-  -e POSTGRES_DB=inlinereidentify \
-  -v inline-reidentify-pgdata:/var/lib/postgresql/data \
-  inline-reidentify-postgres:latest
+  -e POSTGRES_USER=dynamicmasking \
+  -e POSTGRES_PASSWORD=dynamicmasking \
+  -e POSTGRES_DB=dynamicmasking \
+  -v dynamicmasking-pgdata:/var/lib/postgresql/data \
+  dynamicmasking-postgres:latest
 ExecStop=/usr/bin/docker stop -t 10 postgres
 
 [Install]

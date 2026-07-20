@@ -1,5 +1,5 @@
 [Unit]
-Description=InlineRe-Identify Tokenization REST API
+Description=DynamicMasking Tokenization REST API
 After=docker.service network-online.target
 Requires=docker.service
 Wants=network-online.target
@@ -13,9 +13,9 @@ RestartSec=5
 # tweak at instance-launch time that this sidesteps entirely.
 ExecStartPre=-/usr/bin/docker rm -f tokenization-api
 ExecStart=/usr/bin/docker run --rm --name tokenization-api \
-  --env-file /etc/inline-reidentify/tokenization-api.env \
+  --env-file /etc/dynamicmasking/tokenization-api.env \
   --network host \
-  inline-reidentify-tokenization-api:latest
+  dynamicmasking-tokenization-api:latest
 ExecStop=/usr/bin/docker stop -t 10 tokenization-api
 
 [Install]

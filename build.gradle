@@ -32,11 +32,12 @@ jar {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
     includeEmptyDirs = false
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     manifest {
         attributes(
-                'Main-Class'                           : 'com.inlinereidentify.masking.fhe.cli.FheReidentifyCli',
-                (PluginMetadata.PLUGIN_NAME_KEY)       : "inlineFhe",
+                'Main-Class'                           : 'com.delphix.dynamicmasking.fhe.cli.FheReidentifyCli',
+                (PluginMetadata.PLUGIN_NAME_KEY)       : "DynamicMasking",
                 (PluginMetadata.AUTHOR_NAME_KEY)       : "Hims",
                 (PluginMetadata.PLUGIN_VERSION_KEY)    : "1.0",
                 (PluginMetadata.EXTENSIBILITY_API_VERSION_KEY): "${maskingExtensibilityVer}",
@@ -54,6 +55,10 @@ configurations {
     lambdaRuntime
     // Runtime deps for the standalone plain-HTTP-API jar only, same reasoning.
     httpServerRuntime
+    // Runtime deps for the standalone SQL Interception proxy jar only, same reasoning.
+    sqlproxyRuntime
+    // Runtime deps for the standalone Kafka masking bridge jar only, same reasoning.
+    kafkaRuntime
     // bc-fips must NOT be merged into a fat jar: it self-checks its own module integrity at
     // class-load time by hashing the jar it's loaded from and comparing against a checksum
     // baked in at build time. Repackaged into any other jar, that hash no longer matches and
@@ -70,16 +75,17 @@ dependencies {
 
     implementation 'org.bouncycastle:bc-fips:2.1.2'
     // Used by TokenizationAlgorithm's keyFile config field (KeyFileResolver parses the uploaded
-    // JSON key file) -- implementation, not compileOnly, so it's bundled into inlineFhe.jar the
+    // JSON key file) -- implementation, not compileOnly, so it's bundled into DynamicMasking.jar the
     // same way bc-fips is: the Delphix engine's own runtime classpath isn't guaranteed to expose
     // jackson-databind to plugin code (only jackson-annotations is used compile-time-only by the
     // sample algorithms this SDK ships), so this must be self-contained.
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
 
-    // Lambda/HTTP-server handler classes compile against these; provided by the fat jars built
-    // below, never bundled into the Delphix plugin jar.
+    // Lambda/HTTP-server/Kafka-bridge handler classes compile against these; provided by the fat
+    // jars built below, never bundled into the Delphix plugin jar.
     compileOnly 'com.amazonaws:aws-lambda-java-core:1.2.3'
     compileOnly 'software.amazon.awssdk:kms:2.29.1'
+    compileOnly 'org.apache.kafka:kafka-clients:3.8.0'
 
     rawCryptoLibs 'org.bouncycastle:bc-fips:2.1.2'
 
@@ -99,6 +105,25 @@ dependencies {
     }
     httpServerRuntime 'software.amazon.awssdk:url-connection-client:2.29.1'
 
+    // JDBC driver for the SQL Interception proxy's connection to the sample Postgres -- not
+    // referenced directly in code (java.sql.DriverManager auto-discovers it via the JDBC4
+    // ServiceLoader mechanism once it's on the runtime classpath), so no compileOnly entry needed.
+    sqlproxyRuntime 'org.postgresql:postgresql:42.7.4'
+    sqlproxyRuntime 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    sqlproxyRuntime('software.amazon.awssdk:kms:2.29.1') {
+        exclude group: 'software.amazon.awssdk', module: 'apache-client'
+        exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+    }
+    sqlproxyRuntime 'software.amazon.awssdk:url-connection-client:2.29.1'
+
+    kafkaRuntime 'org.apache.kafka:kafka-clients:3.8.0'
+    kafkaRuntime 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    kafkaRuntime('software.amazon.awssdk:kms:2.29.1') {
+        exclude group: 'software.amazon.awssdk', module: 'apache-client'
+        exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+    }
+    kafkaRuntime 'software.amazon.awssdk:url-connection-client:2.29.1'
+
     testImplementation fileTree(dir: "${project.rootDir}/libs", include: '*.jar')
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -108,11 +133,11 @@ test {
     useJUnitPlatform()
 }
 
-// Fat jar for the Redshift Lambda UDF handler (com.inlinereidentify.masking.tokenization.lambda),
+// Fat jar for the Redshift Lambda UDF handler (com.delphix.dynamicmasking.tokenization.lambda),
 // deployed separately from the Delphix plugin jar above -- see Dockerfile. Deliberately excludes
 // bc-fips (see rawCryptoLibs above); the rawCryptoLibs task copies that in unmodified alongside it.
 task lambdaJar(type: Jar) {
-    archiveBaseName = 'inlineReIdentify-lambda'
+    archiveBaseName = 'DynamicMasking-lambda'
     from sourceSets.main.output
     from {
         configurations.lambdaRuntime.collect { it.isDirectory() ? it : zipTree(it) }
@@ -121,14 +146,14 @@ task lambdaJar(type: Jar) {
     includeEmptyDirs = false
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
-        attributes('Main-Class': 'com.inlinereidentify.masking.tokenization.lambda.RedshiftUdfHandler')
+        attributes('Main-Class': 'com.delphix.dynamicmasking.tokenization.lambda.RedshiftUdfHandler')
     }
 }
 
-// Fat jar for the plain HTTP API (com.inlinereidentify.masking.tokenization.http) -- the
+// Fat jar for the plain HTTP API (com.delphix.dynamicmasking.tokenization.http) -- the
 // database-agnostic entry point. Same bc-fips exclusion/reasoning as lambdaJar.
 task httpServerJar(type: Jar) {
-    archiveBaseName = 'inlineReIdentify-http-server'
+    archiveBaseName = 'DynamicMasking-http-server'
     from sourceSets.main.output
     from {
         configurations.httpServerRuntime.collect { it.isDirectory() ? it : zipTree(it) }
@@ -137,7 +162,39 @@ task httpServerJar(type: Jar) {
     includeEmptyDirs = false
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
-        attributes('Main-Class': 'com.inlinereidentify.masking.tokenization.http.TokenizationHttpServer')
+        attributes('Main-Class': 'com.delphix.dynamicmasking.tokenization.http.TokenizationHttpServer')
+    }
+}
+
+// Fat jar for the SQL Interception proxy (com.delphix.dynamicmasking.tokenization.sqlproxy) --
+// transparent masking demo over the sample Postgres. Same bc-fips exclusion/reasoning as lambdaJar.
+task sqlproxyJar(type: Jar) {
+    archiveBaseName = 'DynamicMasking-sqlproxy'
+    from sourceSets.main.output
+    from {
+        configurations.sqlproxyRuntime.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/*.EC'
+    includeEmptyDirs = false
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes('Main-Class': 'com.delphix.dynamicmasking.tokenization.sqlproxy.SqlInterceptionHttpServer')
+    }
+}
+
+// Fat jar for the Kafka masking bridge (com.delphix.dynamicmasking.tokenization.kafka) -- the
+// "Streaming" demo entry point. Same bc-fips exclusion/reasoning as lambdaJar.
+task kafkaJar(type: Jar) {
+    archiveBaseName = 'DynamicMasking-kafka'
+    from sourceSets.main.output
+    from {
+        configurations.kafkaRuntime.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/*.EC'
+    includeEmptyDirs = false
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes('Main-Class': 'com.delphix.dynamicmasking.tokenization.kafka.KafkaMaskingBridge')
     }
 }
 

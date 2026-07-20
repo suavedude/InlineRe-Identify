@@ -2,125 +2,819 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>InlineRe-Identify — Tokenization Demo</title>
+<title>DynamicMasking — Environments</title>
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
-  h1 { font-size: 1.4rem; }
+  :root { --accent: #4C00FF; --accent-dark: #3D00CC; }
+  body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; margin: 0; color: #1a1a1a; background: #f7f7fb; }
+  a { color: var(--accent); }
+  h1 { font-size: 1.3rem; margin: 0; }
+  h2 { font-size: 1.05rem; margin-top: 0; }
+  .card { border: 1px solid #ddd; border-radius: 8px; padding: 1.25rem; background: #fff; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
-  .card { border: 1px solid #ddd; border-radius: 8px; padding: 1.25rem; }
-  .card h2 { font-size: 1.05rem; margin-top: 0; }
   label { display: block; font-size: 0.85rem; font-weight: 600; margin: 0.75rem 0 0.25rem; }
-  input[type=text], input:not([type]), textarea { width: 100%; box-sizing: border-box; padding: 0.4rem; font-size: 0.9rem; border: 1px solid #ccc; border-radius: 4px; }
+  input[type=text], input[type=password], input:not([type]), textarea, select {
+    width: 100%; box-sizing: border-box; padding: 0.4rem; font-size: 0.9rem; border: 1px solid #ccc; border-radius: 4px;
+  }
   textarea { font-family: ui-monospace, monospace; resize: vertical; }
   fieldset { margin-top: 0.75rem; border: 1px solid #ccc; border-radius: 4px; }
   fieldset label { display: inline-block; font-weight: normal; margin: 0.25rem 1rem 0.25rem 0; }
-  button { margin-top: 0.9rem; padding: 0.5rem 0.9rem; font-size: 0.9rem; border: 1px solid #333; border-radius: 4px; background: #1a1a1a; color: #fff; cursor: pointer; }
+  button { padding: 0.7rem 1.3rem; font-size: 1rem; border: 1px solid #333; border-radius: 4px; background: #1a1a1a; color: #fff; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); }
+  button.primary:hover { background: var(--accent-dark); }
   button.secondary { background: #fff; color: #1a1a1a; }
+  a.button-link { display: inline-block; padding: 0.7rem 1.3rem; font-size: 1rem; border: 1px solid #333; border-radius: 4px; background: #1a1a1a; color: #fff; text-decoration: none; margin: 0 0.4rem 0.4rem 0; }
+  a.button-link:hover { background: #333; }
+  a.button-link.secondary-link { background: #fff; color: #1a1a1a; }
+  a.button-link.secondary-link:hover { background: #f2f2f2; }
   button:disabled { opacity: 0.5; cursor: default; }
-  .button-row { display: flex; gap: 0.5rem; }
+  .button-row { display: flex; gap: 0.5rem; margin-top: 0.9rem; }
   .button-row button { flex: 1; }
   .status { font-size: 0.82rem; white-space: pre-wrap; margin-top: 0.6rem; }
   .status.ok { color: #0a7a2f; }
   .status.err { color: #b00020; }
   .hint { font-size: 0.78rem; color: #666; }
   #currentConfig { font-size: 0.8rem; color: #444; background: #f6f6f6; padding: 0.5rem 0.7rem; border-radius: 4px; }
+  .db-fields { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; }
+  .results-table-wrap { overflow-x: auto; margin-top: 0.75rem; }
+  table.results { width: 100%; border-collapse: collapse; font-size: 0.82rem; background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+  table.results th { text-align: left; font-weight: 700; color: #333; border-bottom: 1px solid #ddd; border-right: 1px solid #eee; padding: 0.5rem 0.7rem; white-space: nowrap; background: #f6f6fb; }
+  table.results th:last-child { border-right: none; }
+  table.results td { border-bottom: 1px solid #eee; padding: 0.45rem 0.7rem; white-space: nowrap; }
+  table.results tbody tr:hover { background: #f7f7fb; }
+  table.results th.masked-column { background: #eef2ff; }
+  .badge { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0.05rem 0.4rem; border-radius: 3px; background: var(--accent); color: #fff; margin-left: 0.35rem; }
+
+  /* --- App shell --- */
+  .topnav { display: flex; align-items: center; gap: 2rem; padding: 0.75rem 1.5rem; background: #fff; border-bottom: 1px solid #ddd; }
+  .topnav .brand { font-weight: 700; font-size: 1.1rem; }
+  .topnav .brand small { display: block; font-weight: 400; font-size: 0.7rem; color: #666; }
+  .topnav nav { display: flex; gap: 1.5rem; }
+  .topnav nav a { text-decoration: none; color: #444; font-weight: 600; font-size: 0.92rem; padding-bottom: 0.2rem; border-bottom: 3px solid transparent; }
+  .topnav nav a.active { color: #1a1a1a; border-bottom-color: var(--accent); }
+  .topnav nav a:hover { color: #1a1a1a; border-bottom-color: var(--accent); }
+  .topnav nav .nav-item { position: relative; display: inline-block; }
+  .topnav nav .nav-item > a { cursor: pointer; }
+  .topnav nav .nav-dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); min-width: 150px; z-index: 20; padding: 0.3rem 0; }
+  .topnav nav .nav-item:hover .nav-dropdown-menu { display: block; }
+  .topnav nav .nav-dropdown-menu a { display: block; padding: 0.5rem 0.9rem; font-weight: 500; font-size: 0.88rem; color: #444; }
+  .topnav nav .nav-dropdown-menu a:hover { background: #f6f6fb; }
+  main { max-width: 1100px; margin: 1.5rem auto; padding: 0 1.5rem; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* --- Environments list --- */
+  .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  .list-header .actions { display: flex; gap: 0.5rem; }
+  .list-header button { white-space: nowrap; }
+  .empty-hint { padding: 1.5rem; text-align: center; color: #666; }
+
+  /* --- Shared filterable/sortable data table (Environments + Connectors) --- */
+  .filter-reset-chip { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; font-weight: 600; color: var(--accent); cursor: pointer; margin-bottom: 0.6rem; background: none; border: none; padding: 0; }
+  table.datatable { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+  table.datatable th { position: relative; text-align: left; font-size: 0.82rem; font-weight: 700; color: #333; padding: 0.7rem 0.9rem; border-bottom: 1px solid #ddd; border-right: 1px solid #eee; background: #f6f6fb; white-space: nowrap; }
+  table.datatable th:last-child { border-right: none; }
+  table.datatable td { padding: 0.65rem 0.9rem; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+  table.datatable tr:last-child td { border-bottom: none; }
+  table.datatable tbody tr:not(.category-row):hover { background: #f7f7fb; }
+  table.datatable tr.category-row td { background: #f6f6fb; font-weight: 600; font-size: 0.85rem; color: #444; }
+  table.datatable th .th-label { cursor: pointer; user-select: none; }
+  table.datatable th .th-icons { display: inline-flex; gap: 0.1rem; margin-left: 0.3rem; }
+  table.datatable th .th-icon-btn { background: none; border: none; padding: 0.1rem 0.25rem; font-size: 0.75rem; color: #888; cursor: pointer; border-radius: 3px; line-height: 1; }
+  table.datatable th .th-icon-btn:hover { background: #e8e7fc; color: var(--accent); }
+  table.datatable th[data-key].sorted-asc .th-label::after { content: ' \25B2'; font-size: 0.7em; }
+  table.datatable th[data-key].sorted-desc .th-label::after { content: ' \25BC'; font-size: 0.7em; }
+  .th-popover { display: none; position: absolute; top: 100%; left: 0; margin-top: 0.25rem; background: #fff; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); z-index: 30; padding: 0.4rem; white-space: nowrap; }
+  .th-popover.open { display: block; }
+  .th-popover input[type=text] { width: 160px; margin: 0; font-weight: normal; }
+  .th-popover .sort-menu-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 0.35rem 0.6rem; font-size: 0.85rem; font-weight: normal; color: #333; cursor: pointer; border-radius: 4px; white-space: nowrap; }
+  .th-popover .sort-menu-item:hover { background: #f6f6fb; }
+  .row-actions-cell { position: relative; text-align: center; width: 2.5rem; }
+  .row-actions-btn { background: none; border: none; font-size: 1.1rem; color: #666; cursor: pointer; padding: 0.15rem 0.5rem; border-radius: 4px; letter-spacing: 1px; }
+  .row-actions-btn:hover { background: #eee; }
+  .row-actions-menu { left: auto; right: 0; min-width: 120px; padding: 0.3rem 0; }
+  .row-actions-menu button, .row-actions-menu a { display: block; width: 100%; box-sizing: border-box; background: none; border: none; padding: 0.5rem 0.9rem; font-size: 0.85rem; font-weight: normal; color: #333; text-align: left; cursor: pointer; text-decoration: none; }
+  .row-actions-menu button:hover, .row-actions-menu a:hover { background: #f6f6fb; }
+
+  /* --- Modal --- */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: flex-start; justify-content: center; padding-top: 8vh; z-index: 10; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: #fff; border-radius: 8px; padding: 1.5rem; width: 420px; max-width: 90vw; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  .modal-header h2 { margin: 0; }
+  .modal-header button.close { background: none; border: none; color: #666; font-size: 1.2rem; padding: 0; }
+  .modal .button-row { justify-content: flex-end; }
+  .modal .button-row button { flex: none; }
+  .checkbox-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; }
+  .checkbox-row label { margin: 0; font-weight: normal; }
+
+  /* --- Environment detail --- */
+  .breadcrumb { font-size: 0.82rem; color: #666; margin-bottom: 0.5rem; }
+  .breadcrumb a { text-decoration: none; }
+  .detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.25rem; }
+  .detail-header-left { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+  .detail-header .back { font-size: 0.85rem; }
+  .detail-header .meta { font-size: 0.85rem; color: #666; }
+  #view-environment-detail h1 { font-size: 1.9rem; }
+  .subtabs { display: flex; gap: 1.75rem; border-bottom: 1px solid #ddd; margin: 1.25rem 0 1.5rem; }
+  .subtab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 0.7rem 0; font-size: 1rem; font-weight: 600; color: #666; cursor: pointer; }
+  .subtab-btn.active { color: #1a1a1a; border-bottom-color: var(--accent); }
+  [data-subtab-content] { display: none; }
+
+  /* --- Connectors table: uses the shared table.datatable rules above, see renderConnectorsTable() --- */
+
+  /* --- Live Messages (Streaming) --- */
+  table.live-messages-table th.group-header { text-align: center; background: #f0f0fa; }
+  table.live-messages-table th.group-original { color: #444; }
+  table.live-messages-table th.group-tokenized { color: var(--accent-dark); }
+  table.live-messages-table th[data-key] { cursor: pointer; user-select: none; }
+  table.live-messages-table th[data-key].sorted-asc::after { content: ' \25B2'; font-size: 0.7em; }
+  table.live-messages-table th[data-key].sorted-desc::after { content: ' \25BC'; font-size: 0.7em; }
+  table.live-messages-table .expand-col { width: 1.5rem; }
+  table.live-messages-table tr.main-row { cursor: pointer; }
+  table.live-messages-table tr.main-row:hover { background: #f7f7fb; }
+  table.live-messages-table tr.detail-row td { background: #f9f9fc; padding: 0.9rem; }
+  .json-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .json-panel h4 { margin: 0 0 0.35rem; font-size: 0.82rem; }
+  .json-panel pre { margin: 0; font-size: 0.78rem; background: #fff; border: 1px solid #eee; border-radius: 4px; padding: 0.5rem; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+
+  /* --- Credits --- */
+  table.credits-table td, table.credits-table th { white-space: normal; }
+  table.credits-table a { word-break: break-all; }
+  .site-footer { margin: 2.5rem 0 1rem; padding-top: 1.25rem; border-top: 1px solid #ddd; text-align: center; font-size: 0.78rem; color: #666; }
+  .site-footer .internal-notice { font-weight: 600; color: #b15c00; }
+  .site-footer .copyright a { margin-left: 0.6rem; }
+  .site-footer .social-links { margin: 0.5rem 0; }
+  .site-footer .social-links a { margin: 0 0.5rem; }
+  .site-footer .trademark { max-width: 640px; margin: 0.5rem auto 0; color: #999; }
+
+  /* --- Loading screen --- */
+  .loading-screen { position: fixed; inset: 0; z-index: 9999; background: #fff; display: flex;
+    flex-direction: column; align-items: center; justify-content: center; gap: 2.5rem;
+    opacity: 1; transition: opacity 0.3s ease; }
+  .loading-screen.hidden { opacity: 0; pointer-events: none; }
+  .loading-brand { display: flex; align-items: center; gap: 0.9rem; }
+  .loading-brand svg { width: 46px; height: 46px; flex-shrink: 0; }
+  .loading-brand-text { text-align: left; }
+  .loading-brand-text .loading-title { font-size: 1.7rem; font-weight: 800; color: #1a1a2e; line-height: 1.15; }
+  .loading-brand-text .loading-subtitle { font-size: 1.15rem; font-weight: 400; color: var(--accent); line-height: 1.15; }
+  .loading-spinner { width: 42px; height: 42px; border-radius: 50%;
+    border: 5px solid rgba(76, 0, 255, 0.15); border-top-color: var(--accent);
+    animation: loading-spin 0.85s linear infinite; }
+  @keyframes loading-spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
-<h1>InlineRe-Identify — Tokenization Demo</h1>
-<p id="currentConfig">Loading current configuration&hellip;</p>
 
-<div class="grid">
-  <section class="card" id="cryptoConfigCard">
-    <h2>Crypto Configuration</h2>
-    <p id="remoteTargetNote" class="hint" style="display:none">
-      Target is a remote deployment, not the local docker-compose stack — this panel is
-      disabled because "Apply Configuration" works by running <code>docker compose</code> on
-      this machine, which has no effect on a remote instance. To reconfigure a remote
-      deployment, run <code>deploy/ec2/rebuild.sh</code> (or edit its env file directly) on the
-      target instance itself.
-    </p>
+<!-- Shown until init() finishes fetching applications/environments, and again briefly on any
+     other full-view navigation that needs a fetch before it has anything to render (see
+     showLoadingScreen()/hideLoadingScreen()). -->
+<div id="loadingScreen" class="loading-screen">
+  <div class="loading-brand">
+    <svg viewBox="0 0 48 52" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M2 26 L34 4 C36.5 2.3 39 4.2 39 7 V45 C39 47.8 36.5 49.7 34 48 L2 26 Z" fill="#4C00FF"/>
+      <circle cx="34" cy="14" r="7" fill="#fff"/>
+      <circle cx="34" cy="14" r="4" fill="#4C00FF"/>
+      <circle cx="34" cy="31" r="7" fill="#fff"/>
+      <circle cx="34" cy="31" r="4" fill="#4C00FF"/>
+    </svg>
+    <div class="loading-brand-text">
+      <div class="loading-title">Delphix</div>
+      <div class="loading-subtitle">Continuous Compliance</div>
+    </div>
+  </div>
+  <div class="loading-spinner"></div>
+</div>
 
-    <label for="cryptoProvider">Crypto Provider</label>
-    <select id="cryptoProvider">
-      <option value="BCFIPS">BCFIPS (Bouncy Castle FIPS, approved-only)</option>
-      <option value="SunJCE">SunJCE (JDK default, no FIPS validation)</option>
-    </select>
+<div class="topnav">
+  <div class="brand">DynamicMasking<small>Delphix — Continuous Compliance demo</small></div>
+  <nav>
+    <a href="#/environments" data-nav="environments">Environments</a>
+    <a href="#/settings" data-nav="settings">Settings</a>
+    <div class="nav-item">
+      <a href="#/credits" data-nav="credits">Docs</a>
+      <div class="nav-dropdown-menu">
+        <a href="/docs" target="_blank" rel="noopener">API Specs</a>
+        <a href="#/credits">Credits</a>
+      </div>
+    </div>
+  </nav>
+</div>
 
-    <label for="cipherAlgorithm">Cipher Algorithm</label>
-    <input id="cipherAlgorithm" value="AES-CBC-CTS" />
+<main>
 
-    <fieldset>
-      <legend>Key Source</legend>
-      <label><input type="radio" name="keySource" value="PLAINTEXT" checked> Plaintext (local dev)</label>
-      <label><input type="radio" name="keySource" value="KMS"> AWS KMS envelope</label>
-    </fieldset>
+<!-- ==================== Environments list ==================== -->
+<div id="view-environments" class="view">
+  <div class="list-header">
+    <h1>Environments</h1>
+    <div class="actions">
+      <button type="button" class="secondary" id="addApplicationBtn">+ Application</button>
+      <button type="button" class="primary" id="addEnvironmentBtn">+ Environment</button>
+    </div>
+  </div>
+  <div id="envTableWrap"></div>
+</div>
 
-    <div id="plaintextFields">
-      <label for="dekBase64">Data Encryption Key (Base64)</label>
-      <input id="dekBase64" placeholder="16/24/32-byte AES key, Base64" />
-      <button type="button" class="secondary" id="generateKeyBtn">Generate random AES-128 key</button>
+<!-- ==================== Environment detail ==================== -->
+<div id="view-environment-detail" class="view">
+  <div class="breadcrumb"><a href="#/environments">Environments</a> &gt; <span id="breadcrumbEnvName"></span></div>
+  <div class="detail-header">
+    <div class="detail-header-left">
+      <a href="#/environments" class="back">&larr; Back</a>
+      <h1 id="detailEnvName"></h1>
+      <span class="meta" id="detailEnvMeta"></span>
+    </div>
+    <button type="button" class="primary" id="addConnectorBtn" style="display:none">+ Connector</button>
+  </div>
+
+  <div class="subtabs">
+    <button type="button" class="subtab-btn active" data-subtab="jobs">Jobs</button>
+    <button type="button" class="subtab-btn" data-subtab="rulesets">Rule Sets</button>
+    <button type="button" class="subtab-btn" data-subtab="connectors">Connectors</button>
+  </div>
+
+  <div id="panel-tokenization" style="display:none">
+    <div data-subtab-content="connectors">
+      <p id="currentConfig">Loading current configuration&hellip;</p>
+      <section class="card" id="cryptoConfigCard">
+        <h2>Crypto Configuration</h2>
+        <p id="remoteTargetNote" class="hint" style="display:none">
+          Target is a remote deployment, not the local docker-compose stack — this panel is
+          disabled because "Apply Configuration" works by running <code>docker compose</code> on
+          this machine, which has no effect on a remote instance. To reconfigure a remote
+          deployment, run <code>deploy/ec2/rebuild.sh</code> (or edit its env file directly) on the
+          target instance itself.
+        </p>
+
+        <label for="cryptoProvider">Crypto Provider</label>
+        <select id="cryptoProvider">
+          <option value="BCFIPS">BCFIPS (Bouncy Castle FIPS, approved-only)</option>
+          <option value="SunJCE">SunJCE (JDK default, no FIPS validation)</option>
+        </select>
+
+        <label for="cipherAlgorithm">Cipher Algorithm</label>
+        <input id="cipherAlgorithm" value="AES-CBC-CTS" />
+
+        <fieldset>
+          <legend>Key Source</legend>
+          <label><input type="radio" name="keySource" value="PLAINTEXT" checked> Plaintext (local dev)</label>
+          <label><input type="radio" name="keySource" value="KMS"> AWS KMS envelope</label>
+        </fieldset>
+
+        <div id="plaintextFields">
+          <label for="dekBase64">Data Encryption Key (Base64)</label>
+          <input id="dekBase64" placeholder="16/24/32-byte AES key, Base64" />
+          <button type="button" class="secondary" id="generateKeyBtn">Generate random AES-128 key</button>
+        </div>
+
+        <div id="kmsFields" style="display:none">
+          <label for="kmsKeyId">KMS Key ID (optional — pins expected CMK)</label>
+          <input id="kmsKeyId" placeholder="alias/dynamicmasking-parent-key" />
+          <label for="dekCiphertextBase64">Data Encryption Key Ciphertext (Base64)</label>
+          <input id="dekCiphertextBase64" placeholder="output of: aws kms encrypt --plaintext ..." />
+          <label for="awsRegion">AWS Region</label>
+          <input id="awsRegion" placeholder="us-east-1" />
+          <p class="hint">Resolved via <code>kms:Decrypt</code> at container startup — normally via an
+          EC2 instance role or a mounted <code>~/.aws</code> profile, neither of which need anything
+          entered below. Only fill these in if using a long-lived IAM user's keys instead (see
+          README.md's "Data encryption key: KMS envelope encryption" section) — left blank, they're
+          not sent at all.</p>
+
+          <label for="awsAccessKeyId">AWS Access Key ID (optional)</label>
+          <input id="awsAccessKeyId" type="password" autocomplete="off" placeholder="AKIA..." />
+          <label for="awsSecretAccessKey">AWS Secret Access Key (optional)</label>
+          <input id="awsSecretAccessKey" type="password" autocomplete="off" placeholder="only needed with an IAM user's static keys" />
+          <label for="awsSessionToken">AWS Session Token (optional)</label>
+          <input id="awsSessionToken" type="password" autocomplete="off" placeholder="only needed with temporary/STS credentials" />
+        </div>
+
+        <button type="button" id="applyBtn">Apply Configuration</button>
+        <p id="configStatus" class="status"></p>
+      </section>
+      <div id="connectorsTable-tokenization"></div>
     </div>
 
-    <div id="kmsFields" style="display:none">
-      <label for="kmsKeyId">KMS Key ID (optional — pins expected CMK)</label>
-      <input id="kmsKeyId" placeholder="alias/inline-reidentify-parent-key" />
-      <label for="dekCiphertextBase64">Data Encryption Key Ciphertext (Base64)</label>
-      <input id="dekCiphertextBase64" placeholder="output of: aws kms encrypt --plaintext ..." />
-      <label for="awsRegion">AWS Region</label>
-      <input id="awsRegion" placeholder="us-east-1" />
-      <p class="hint">Resolved via <code>kms:Decrypt</code> at container startup — normally via an
-      EC2 instance role or a mounted <code>~/.aws</code> profile, neither of which need anything
-      entered below. Only fill these in if using a long-lived IAM user's keys instead (see
-      README.md's "Data encryption key: KMS envelope encryption" section) — left blank, they're
-      not sent at all.</p>
-
-      <label for="awsAccessKeyId">AWS Access Key ID (optional)</label>
-      <input id="awsAccessKeyId" type="password" autocomplete="off" placeholder="AKIA..." />
-      <label for="awsSecretAccessKey">AWS Secret Access Key (optional)</label>
-      <input id="awsSecretAccessKey" type="password" autocomplete="off" placeholder="only needed with an IAM user's static keys" />
-      <label for="awsSessionToken">AWS Session Token (optional)</label>
-      <input id="awsSessionToken" type="password" autocomplete="off" placeholder="only needed with temporary/STS credentials" />
+    <div data-subtab-content="rulesets">
+      <section class="card">
+        <h2>Algorithm Config JSON (for the Delphix engine)</h2>
+        <p class="hint">This is the exact JSON shape the Delphix Continuous Compliance engine injects
+          into <code>TokenizationAlgorithm</code> when you add it as a masking algorithm (see
+          README.md) — paste it into the engine's algorithm configuration field. It's independent of
+          this demo's <code>KEY_SOURCE</code>/KMS envelope setup on the Connectors tab: the engine
+          plugin only takes the key inline (or via <code>keyFile</code>), never KMS-wrapped. Edit
+          freely; use "Sync from current config" to overwrite with what's configured there.</p>
+        <textarea id="engineConfigJson" rows="8" spellcheck="false"></textarea>
+        <div class="button-row">
+          <button type="button" class="secondary" id="syncConfigJsonBtn">Sync from current config</button>
+          <button type="button" class="secondary" id="copyConfigJsonBtn">Copy to clipboard</button>
+        </div>
+        <p id="configJsonStatus" class="status"></p>
+      </section>
+      <div id="rulesetCard-tokenization" style="margin-top: 1.5rem;"></div>
     </div>
 
-    <button type="button" id="applyBtn">Apply Configuration</button>
-    <p id="configStatus" class="status"></p>
-  </section>
+    <div data-subtab-content="jobs">
+      <section class="card">
+        <h2>Tokenize / Reidentify</h2>
 
-  <section class="card">
-    <h2>Tokenize / Reidentify</h2>
-
-    <label for="plainValues">Plaintext values (one per line)</label>
-    <textarea id="plainValues" rows="7">4111-1111-1111-1111
+        <label for="plainValues">Plaintext values (one per line)</label>
+        <textarea id="plainValues" rows="7">4111-1111-1111-1111
 jane.doe@example.com</textarea>
 
-    <div class="button-row">
-      <button type="button" id="tokenizeBtn">Tokenize &rarr;</button>
-      <button type="button" class="secondary" id="reidentifyBtn">&larr; Reidentify</button>
+        <div class="button-row">
+          <button type="button" id="tokenizeBtn">Tokenize &rarr;</button>
+          <button type="button" class="secondary" id="reidentifyBtn">&larr; Reidentify</button>
+        </div>
+
+        <label for="tokenValues">Token values (one per line)</label>
+        <textarea id="tokenValues" rows="7"></textarea>
+
+        <p id="opStatus" class="status"></p>
+      </section>
+    </div>
+  </div>
+
+  <div id="panel-streaming" style="display:none">
+    <div data-subtab-content="connectors">
+      <section class="card">
+        <h2>Kafka Broker</h2>
+        <p class="hint">The <code>kafka-masking-bridge</code> connector this environment's Jobs run
+          against — a single-node Kafka broker (KRaft mode), see <code>docker-compose.yml</code>.</p>
+        <table class="results">
+          <tbody>
+            <tr><td>Bootstrap servers</td><td class="mono">kafka:19092 (internal) / localhost:9092 (host)</td></tr>
+            <tr><td>Input topic</td><td class="mono">dynamicmasking.demo.input</td></tr>
+            <tr><td>Output topic</td><td class="mono">dynamicmasking.demo.output</td></tr>
+          </tbody>
+        </table>
+        <p class="hint" style="margin-top: 0.9rem;">Browse both topics directly (raw Kafka
+          messages, independent of this demo's own Live Messages view) via the embedded Kafka UI:</p>
+        <a id="kafkaUiLink" class="button-link" href="#" target="_blank" rel="noopener">Open Kafka UI &rarr;</a>
+      </section>
+      <div id="connectorsTable-streaming"></div>
     </div>
 
-    <label for="tokenValues">Token values (one per line)</label>
-    <textarea id="tokenValues" rows="7"></textarea>
+    <div data-subtab-content="rulesets">
+      <div id="rulesetCard-streaming"></div>
+    </div>
 
-    <p id="opStatus" class="status"></p>
+    <div data-subtab-content="jobs">
+      <section class="card">
+        <h2>Streaming (Kafka)</h2>
+        <p class="hint">Send a test JSON message to the input topic; <code>kafka-masking-bridge</code>
+          tokenizes <code>full_name</code>/<code>email</code>/<code>credit_card</code> (via the same
+          <code>BatchTokenizer</code> core the REST API uses) and produces the result to the output
+          topic, shown below.</p>
+        <label for="kafkaMessage">Message JSON</label>
+        <textarea id="kafkaMessage" rows="5" spellcheck="false">{
+  "full_name": "Jane Doe",
+  "email": "jane.doe@example.com",
+  "credit_card": "4111-1111-1111-1111"
+}</textarea>
+        <button type="button" id="kafkaSendBtn">Send to Kafka</button>
+        <p id="kafkaSendStatus" class="status"></p>
+      </section>
+
+      <section class="card" style="margin-top: 1.5rem;">
+        <h2>Live Messages</h2>
+        <p class="hint">Polled from <code>kafka-masking-bridge</code>'s output topic every 2s while
+          this environment is open. Click a column header to sort; click a row to expand the full
+          Original/Tokenized JSON side by side. Jump to a specific connector's own Live Messages
+          detail page below:</p>
+        <div id="kafkaConnectorButtons" class="button-row" style="flex-wrap: wrap;"></div>
+        <div id="kafkaResults" class="results-table-wrap"></div>
+      </section>
+    </div>
+  </div>
+
+  <div id="panel-sql-interception" style="display:none">
+    <div data-subtab-content="connectors">
+      <section class="card">
+        <h2>Database Credentials</h2>
+        <p class="hint">Defaults point at this repo's local docker-compose Postgres (seeded with
+          sample rows by <code>docker/postgres/init.sql</code>). Both the "SQL Functions" and
+          "SQL Interception" Jobs below run against this connection — SQL Functions via
+          <code>psql</code> inside the running <code>postgres</code> container (see
+          <code>demo/server.py</code>); SQL Interception via <code>sql-interception-proxy</code>'s
+          own fixed connection (env vars, not this form).</p>
+        <div class="db-fields">
+          <div>
+            <label for="dbHost">Host</label>
+            <input id="dbHost" value="localhost" />
+          </div>
+          <div>
+            <label for="dbPort">Port</label>
+            <input id="dbPort" value="5432" />
+          </div>
+          <div>
+            <label for="dbName">Database</label>
+            <input id="dbName" value="dynamicmasking" />
+          </div>
+          <div>
+            <label for="dbUser">User</label>
+            <input id="dbUser" value="dynamicmasking" />
+          </div>
+          <div>
+            <label for="dbPassword">Password</label>
+            <input id="dbPassword" type="password" autocomplete="off" value="dynamicmasking" />
+          </div>
+        </div>
+        <button type="button" id="dbConnectBtn">Connect</button>
+        <p id="dbConnectStatus" class="status"></p>
+      </section>
+      <div id="connectorsTable-sql-interception"></div>
+    </div>
+
+    <div data-subtab-content="rulesets">
+      <section class="card">
+        <h2>SQL Interception Rule Set</h2>
+        <p class="hint">Columns <code>sql-interception-proxy</code> masks transparently in any
+          <code>SELECT</code>'s result, matched by column label (case-insensitive) — see the Jobs
+          tab's "SQL Interception" panel.</p>
+        <table class="results">
+          <thead><tr><th>Column</th><th>Scheme</th><th>Delphix Algorithm</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">full_name</td><td class="mono">FULL-NAME-MASK</td><td class="mono">FullNameMaskingAlgorithm</td></tr>
+            <tr><td class="mono">email</td><td class="mono">EMAIL-MASK</td><td class="mono">EmailMaskingAlgorithm</td></tr>
+            <tr><td class="mono">credit_card</td><td class="mono">CREDIT-CARD-MASK</td><td class="mono">CreditCardMaskingAlgorithm</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card" style="margin-top: 1.5rem;">
+        <h2>SQL Functions Rule Set (opt-in)</h2>
+        <p class="hint">Every SQL UDF the "SQL Functions" job below can call: the scheme
+          ("algorithm framework" in <code>OneWayMaskingSchemeRegistry</code>/
+          <code>TokenizationSchemeRegistry</code>) it's permanently fixed to, and the Delphix
+          Continuous Compliance engine algorithm class that runs the same scheme (see
+          <code>FixedSchemeMaskingAlgorithm</code>). For each demo column, the selector in
+          the last column rewrites the Masked Data SQL job.</p>
+        <div class="tablewrap">
+          <table class="results" id="algorithmMappingTable">
+            <thead>
+              <tr><th>SQL UDF</th><th>Scheme</th><th>Delphix Algorithm</th><th>Demo column</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>mask_fullname()</code></td>
+                <td class="mono">FULL-NAME-MASK</td>
+                <td class="mono">FullNameMaskingAlgorithm</td>
+                <td>
+                  <select id="algoFullName">
+                    <option value="mask">full_name (masked)</option>
+                    <option value="tokenize">full_name (tokenized instead)</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td><code>mask_email()</code></td>
+                <td class="mono">EMAIL-MASK</td>
+                <td class="mono">EmailMaskingAlgorithm</td>
+                <td>
+                  <select id="algoEmail">
+                    <option value="mask">email (masked)</option>
+                    <option value="tokenize">email (tokenized instead)</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td><code>mask_creditcard()</code></td>
+                <td class="mono">CREDIT-CARD-MASK</td>
+                <td class="mono">CreditCardMaskingAlgorithm</td>
+                <td>
+                  <select id="algoCreditCard">
+                    <option value="mask">credit_card (masked)</option>
+                    <option value="tokenize">credit_card (tokenized instead)</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td><code>mask_firstname()</code></td>
+                <td class="mono">FIRST-NAME-LOOKUP</td>
+                <td class="mono">FirstNameMaskingAlgorithm</td>
+                <td>
+                  <select id="algoFirstName">
+                    <option value="mask">first_name (masked)</option>
+                    <option value="tokenize">first_name (tokenized instead)</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td><code>mask_lastname()</code></td>
+                <td class="mono">LAST-NAME-LOOKUP</td>
+                <td class="mono">LastNameMaskingAlgorithm</td>
+                <td>
+                  <select id="algoLastName">
+                    <option value="mask">last_name (masked)</option>
+                    <option value="tokenize">last_name (tokenized instead)</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td><code>mask_dateshift()</code></td>
+                <td class="mono">DATE-SHIFT</td>
+                <td class="mono">DateShiftMaskingAlgorithm</td>
+                <td>
+                  <select id="algoDateShift">
+                    <option value="mask">date_of_birth (masked)</option>
+                    <option value="tokenize">date_of_birth (tokenized instead)</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td><code>mask_segmentmapping()</code></td>
+                <td class="mono">SEGMENT-MAPPING</td>
+                <td class="mono">SegmentMappingMaskingAlgorithm</td>
+                <td>
+                  <select id="algoZipCode">
+                    <option value="mask">zip_code (masked)</option>
+                    <option value="tokenize">zip_code (tokenized instead)</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td><code>tokenize()</code> / <code>reidentify()</code></td>
+                <td class="mono">AES-CBC-CTS (default)</td>
+                <td class="mono">TokenizationAlgorithm</td>
+                <td class="hint">any column &mdash; reversible; also selectable per row above</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <div id="rulesetCard-sql-interception" style="margin-top: 1.5rem;"></div>
+    </div>
+
+    <div data-subtab-content="jobs">
+      <section class="card">
+        <h2>SQL Interception</h2>
+        <p class="hint">Distinct from the "SQL Functions" jobs below: run any
+          <code>SELECT</code> below — it never calls <code>tokenize()</code>/<code>mask_*()</code> —
+          and <code>sql-interception-proxy</code> masks known-sensitive columns
+          (<code>full_name</code>/<code>email</code>/<code>credit_card</code>) in the result
+          transparently. Columns highlighted below were masked. <strong>Known limitation:</strong> an
+          aliased sensitive column (e.g. <code>SELECT email AS contact</code>) isn't recognized by
+          column label alone and passes through unmasked. This is a best-effort <code>SELECT</code>-only
+          guard, not a security boundary.</p>
+        <label for="sqlInterceptionSql">SQL</label>
+        <textarea id="sqlInterceptionSql" rows="4" spellcheck="false">SELECT id, full_name, email, credit_card FROM customers;</textarea>
+        <button type="button" id="sqlInterceptionRunBtn">Run (transparently masked)</button>
+        <p id="sqlInterceptionStatus" class="status"></p>
+        <div id="sqlInterceptionResults" class="results-table-wrap"></div>
+      </section>
+
+      <div class="grid" style="margin-top: 1.5rem;">
+        <section class="card">
+          <h2>SQL Functions: Sensitive Data (raw)</h2>
+          <p class="hint">Opt-in — masking here only happens when the query explicitly calls
+            <code>tokenize()</code>/<code>mask_*()</code>, unlike the SQL Interception job above.</p>
+          <label for="rawSql">SQL</label>
+          <textarea id="rawSql" rows="4" spellcheck="false">SELECT id, full_name, email, credit_card,
+       first_name, last_name, date_of_birth, zip_code
+FROM customers;</textarea>
+          <button type="button" id="runRawBtn">Run</button>
+          <p id="rawStatus" class="status"></p>
+          <div id="rawResults" class="results-table-wrap"></div>
+        </section>
+
+        <section class="card">
+          <h2>SQL Functions: Masked Data</h2>
+          <label for="maskedSql">SQL</label>
+          <textarea id="maskedSql" rows="7" spellcheck="false">SELECT id, mask_fullname(full_name) AS full_name, mask_email(email) AS email,
+       mask_creditcard(credit_card) AS credit_card, mask_firstname(first_name) AS first_name,
+       mask_lastname(last_name) AS last_name, mask_dateshift(date_of_birth) AS date_of_birth,
+       mask_segmentmapping(zip_code) AS zip_code
+FROM customers;</textarea>
+          <p class="hint">One function per data shape -- always available, nothing to configure:
+            <code>mask_fullname()</code>, <code>mask_creditcard()</code> (keeps separators),
+            <code>mask_email()</code> (keeps the domain). <code>tokenize()</code> (reversible) works
+            on any column too — see the SQL Functions Rule Set on the Rule Sets tab.</p>
+          <button type="button" id="runMaskedBtn">Run</button>
+          <p id="maskedStatus" class="status"></p>
+          <div id="maskedResults" class="results-table-wrap"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Settings ==================== -->
+<div id="view-settings" class="view">
+  <h1>Settings</h1>
+  <section class="card" style="margin-top: 1rem; max-width: 480px;">
+    <h2>Sync Key from Delphix Engine</h2>
+    <p class="hint">Authenticates against a live Delphix Masking Engine and syncs its configured
+      data encryption key into this deployment's <code>.env</code> — the reverse direction of
+      <code>scripts/sync-engine-config.sh</code>, which pushes a local key to the engine instead.
+      Only works against the local docker-compose stack (rebuilds <code>tokenization-api</code>
+      afterward, same as "Apply Configuration").</p>
+
+    <label for="engineHost">Engine Host / IP</label>
+    <input id="engineHost" placeholder="masking-engine.example.com" />
+    <label for="engineUsername">Username</label>
+    <input id="engineUsername" placeholder="admin" />
+    <label for="enginePassword">Password</label>
+    <input id="enginePassword" type="password" autocomplete="off" />
+
+    <button type="button" class="primary" id="engineSyncBtn" style="margin-top: 0.9rem;">Sync Key from Engine</button>
+    <p id="engineSyncStatus" class="status"></p>
   </section>
 </div>
 
-<section class="card" style="margin-top: 1.5rem;">
-  <h2>Algorithm Config JSON (for the Delphix engine)</h2>
-  <p class="hint">This is the exact JSON shape the Delphix Continuous Compliance engine injects
-    into <code>TokenizationAlgorithm</code> when you add it as a masking algorithm (see
-    README.md) — paste it into the engine's algorithm configuration field. It's independent of
-    this demo's <code>KEY_SOURCE</code>/KMS envelope setup above: the engine plugin only takes
-    the key inline (or via <code>keyFile</code>), never KMS-wrapped. Edit freely; use "Sync from
-    current config" to overwrite with what's in the panel above.</p>
-  <textarea id="engineConfigJson" rows="8" spellcheck="false"></textarea>
-  <div class="button-row">
-    <button type="button" class="secondary" id="syncConfigJsonBtn">Sync from current config</button>
-    <button type="button" class="secondary" id="copyConfigJsonBtn">Copy to clipboard</button>
+<!-- ==================== Credits ==================== -->
+<div id="view-credits" class="view">
+  <div class="breadcrumb"><a href="#/environments">Environments</a> &gt; Credits</div>
+  <h1>Credits</h1>
+  <p class="hint">Open source and Delphix proprietary components used by this project.</p>
+
+  <section class="card wide">
+    <h2>Open Source Software</h2>
+    <table class="results credits-table">
+      <thead><tr><th>Name</th><th>Purpose in this project</th><th>License</th><th>URL</th></tr></thead>
+      <tbody>
+        <tr><td>Bouncy Castle FIPS (<code>bc-fips</code>)</td><td>FIPS-validated crypto provider for tokenization</td><td>Bouncy Castle Licence</td><td><a href="https://www.bouncycastle.org/fips-java/" target="_blank" rel="noopener noreferrer">bouncycastle.org/fips-java</a></td></tr>
+        <tr><td>Jackson Databind</td><td>JSON (de)serialization in the Java entry points</td><td>Apache-2.0</td><td><a href="https://github.com/FasterXML/jackson-databind" target="_blank" rel="noopener noreferrer">github.com/FasterXML/jackson-databind</a></td></tr>
+        <tr><td>AWS Lambda Java Core</td><td>Redshift Lambda UDF handler interface</td><td>Apache-2.0</td><td><a href="https://github.com/aws/aws-lambda-java-libs" target="_blank" rel="noopener noreferrer">github.com/aws/aws-lambda-java-libs</a></td></tr>
+        <tr><td>AWS SDK for Java v2 (<code>kms</code>, <code>url-connection-client</code>)</td><td>KMS envelope decryption for the data encryption key</td><td>Apache-2.0</td><td><a href="https://github.com/aws/aws-sdk-java-v2" target="_blank" rel="noopener noreferrer">github.com/aws/aws-sdk-java-v2</a></td></tr>
+        <tr><td>Apache Kafka (<code>kafka-clients</code>)</td><td>Kafka producer/consumer client (Java) for the Kafka masking bridge</td><td>Apache-2.0</td><td><a href="https://kafka.apache.org/" target="_blank" rel="noopener noreferrer">kafka.apache.org</a></td></tr>
+        <tr><td>PostgreSQL JDBC Driver</td><td>SQL Interception proxy's database connection</td><td>BSD-2-Clause</td><td><a href="https://jdbc.postgresql.org/" target="_blank" rel="noopener noreferrer">jdbc.postgresql.org</a></td></tr>
+        <tr><td>JUnit 5</td><td>Unit tests for the crypto/masking algorithms</td><td>EPL-2.0</td><td><a href="https://junit.org/junit5/" target="_blank" rel="noopener noreferrer">junit.org/junit5</a></td></tr>
+        <tr><td>Eclipse Temurin</td><td>JRE base image for every standalone Java service</td><td>Apache-2.0 / GPLv2+CE</td><td><a href="https://adoptium.net/" target="_blank" rel="noopener noreferrer">adoptium.net</a></td></tr>
+        <tr><td>PostgreSQL</td><td>Sample database (Postgres, SQL Interception)</td><td>PostgreSQL License</td><td><a href="https://www.postgresql.org/" target="_blank" rel="noopener noreferrer">postgresql.org</a></td></tr>
+        <tr><td>pgsql-http</td><td>Postgres HTTP-calling SQL functions (<code>tokenize()</code>/<code>mask_*()</code>)</td><td>PostgreSQL License</td><td><a href="https://github.com/pramsey/pgsql-http" target="_blank" rel="noopener noreferrer">github.com/pramsey/pgsql-http</a></td></tr>
+        <tr><td>Apache Kafka (broker image)</td><td>Message broker (KRaft mode, single node)</td><td>Apache-2.0</td><td><a href="https://kafka.apache.org/" target="_blank" rel="noopener noreferrer">kafka.apache.org</a></td></tr>
+        <tr><td>Kafka UI (Provectus)</td><td>Embedded topic/message browser</td><td>Apache-2.0</td><td><a href="https://github.com/provectus/kafka-ui" target="_blank" rel="noopener noreferrer">github.com/provectus/kafka-ui</a></td></tr>
+        <tr><td>nginx</td><td><code>kafka-ui-proxy</code> reverse proxy</td><td>BSD-2-Clause</td><td><a href="https://nginx.org/" target="_blank" rel="noopener noreferrer">nginx.org</a></td></tr>
+        <tr><td>Python</td><td>Runtime for <code>demo/server.py</code> and <code>edi270_producer.py</code></td><td>PSF License</td><td><a href="https://www.python.org/" target="_blank" rel="noopener noreferrer">python.org</a></td></tr>
+        <tr><td>FastAPI</td><td><code>demo/server.py</code>'s web framework; generates the Swagger UI at <code>/docs</code></td><td>MIT</td><td><a href="https://fastapi.tiangolo.com/" target="_blank" rel="noopener noreferrer">fastapi.tiangolo.com</a></td></tr>
+        <tr><td>Uvicorn</td><td>ASGI server running <code>demo/server.py</code></td><td>BSD-3-Clause</td><td><a href="https://www.uvicorn.org/" target="_blank" rel="noopener noreferrer">uvicorn.org</a></td></tr>
+        <tr><td>kafka-python</td><td>EDI270 synthetic event producer's Kafka client</td><td>Apache-2.0</td><td><a href="https://github.com/dpkp/kafka-python" target="_blank" rel="noopener noreferrer">github.com/dpkp/kafka-python</a></td></tr>
+        <tr><td>Gradle</td><td>Build tool</td><td>Apache-2.0</td><td><a href="https://gradle.org/" target="_blank" rel="noopener noreferrer">gradle.org</a></td></tr>
+        <tr><td>Docker / Docker Compose</td><td>Containerization and orchestration</td><td>Apache-2.0</td><td><a href="https://www.docker.com/" target="_blank" rel="noopener noreferrer">docker.com</a></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card wide" style="margin-top: 1.5rem;">
+    <h2>Delphix Proprietary</h2>
+    <p class="hint">Not open source — listed for completeness since this project depends on them.
+      Versions below are read from <code>gradle.properties</code> as of this writing; keep them in
+      sync if that file changes (this is a static page, not build-time templated).</p>
+    <table class="results credits-table">
+      <thead><tr><th>Name</th><th>Purpose in this project</th><th>Version</th></tr></thead>
+      <tbody>
+        <tr><td>Delphix Masking Extensibility API SDK</td><td>Plugin API this project's <code>MaskingAlgorithm</code> implementations compile against</td><td class="mono">2026.4.0-SNAPSHOT</td></tr>
+        <tr><td>Delphix <code>semantic-version</code> library</td><td>Build-time versioning helper alongside the extensibility API</td><td class="mono">2.1.0</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="site-footer">
+    <p class="internal-notice">Internal project, not for external use</p>
+    <p class="copyright">
+      © Delphix, Inc., a Perforce company. All rights reserved.
+      <a href="https://www.perforce.com/license-agreements" target="_blank" rel="noopener noreferrer">Terms of Use</a>
+      <a href="https://www.perforce.com/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+    </p>
+    <nav class="social-links">
+      <a href="https://www.linkedin.com/company/perforce/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">LinkedIn</a>
+      <a href="https://www.youtube.com/user/PerforceSoftware" target="_blank" rel="noopener noreferrer" aria-label="YouTube">YouTube</a>
+    </nav>
+    <p class="trademark">
+      Delphix and other identified trademarks are the property of Delphix, Inc., Perforce Software, Inc., or an affiliate.
+      Other company, product, and service names may be trademarks or service marks of others. Contact Delphix, Inc., for further details.
+    </p>
+  </footer>
+</div>
+
+<!-- ==================== Connector Live Messages detail ==================== -->
+<div id="view-connector-messages" class="view">
+  <div class="breadcrumb">
+    <a href="#/environments">Environments</a> &gt;
+    <a href="#" id="connMsgEnvLink"></a> &gt;
+    <span id="connMsgConnectorName"></span> Live Messages
   </div>
-  <p id="configJsonStatus" class="status"></p>
-</section>
+  <div class="detail-header">
+    <div class="detail-header-left">
+      <a href="#" id="connMsgBackLink" class="back">&larr; Back</a>
+      <h1 id="connMsgTitle"></h1>
+      <span class="meta" id="connMsgMeta"></span>
+    </div>
+  </div>
+
+  <section class="card" style="margin-top: 1rem;">
+    <h2>Connector</h2>
+    <table class="results">
+      <tbody>
+        <tr><td>Topic</td><td class="mono" id="connMsgTopic"></td></tr>
+        <tr><td>Bootstrap Servers</td><td class="mono" id="connMsgBootstrap"></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card" style="margin-top: 1.5rem;">
+    <h2>Live Messages</h2>
+    <p class="hint">Polled every 2s while this page is open. Click a column header to sort; click
+      a row to expand the full JSON.</p>
+    <div id="connMsgResults" class="results-table-wrap"></div>
+  </section>
+</div>
+
+</main>
+
+<!-- ==================== Add Application modal ==================== -->
+<div class="modal-overlay" id="addApplicationModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Add Application</h2>
+      <button type="button" class="close" data-close-modal="addApplicationModal">&times;</button>
+    </div>
+    <label for="newApplicationName">Application Name</label>
+    <input id="newApplicationName" placeholder="e.g. Customer Data Platform" />
+    <p id="addApplicationStatus" class="status"></p>
+    <div class="button-row">
+      <button type="button" class="secondary" data-close-modal="addApplicationModal">Cancel</button>
+      <button type="button" class="primary" id="saveApplicationBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Add Environment modal ==================== -->
+<div class="modal-overlay" id="addEnvironmentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Add Environment</h2>
+      <button type="button" class="close" data-close-modal="addEnvironmentModal">&times;</button>
+    </div>
+    <label for="newEnvironmentApplication">Select Application</label>
+    <select id="newEnvironmentApplication"></select>
+    <label for="newEnvironmentName">Environment Name</label>
+    <input id="newEnvironmentName" placeholder="e.g. Streaming_Environment" />
+    <label for="newEnvironmentPurpose">Purpose</label>
+    <select id="newEnvironmentPurpose">
+      <option value="Streaming">Streaming</option>
+      <option value="Tokenization">Tokenization</option>
+      <option value="SQL Interception">SQL Interception</option>
+    </select>
+    <div class="checkbox-row">
+      <input type="checkbox" id="newEnvironmentApproval" disabled title="Only applies to Database RuleSets" />
+      <label for="newEnvironmentApproval">Enable Approval Workflow (Database RuleSets only)</label>
+    </div>
+    <p id="addEnvironmentStatus" class="status"></p>
+    <div class="button-row">
+      <button type="button" class="secondary" data-close-modal="addEnvironmentModal">Cancel</button>
+      <button type="button" class="secondary" id="saveEnvironmentBtn">Save</button>
+      <button type="button" class="primary" id="saveAndViewEnvironmentBtn">Save And View</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Add Connector modal ==================== -->
+<div class="modal-overlay" id="addConnectorModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Add Connector</h2>
+      <button type="button" class="close" data-close-modal="addConnectorModal">&times;</button>
+    </div>
+    <p class="hint">Demo metadata only — this list doesn't change what the Jobs tab actually
+      connects to (still the real docker-compose services).</p>
+
+    <div id="streamingConnectorFields" style="display:none">
+      <label for="newConnectorStreamType">Stream Type</label>
+      <select id="newConnectorStreamType">
+        <option value="kafka" selected>Kafka</option>
+        <option value="kinesis" disabled>Kinesis (coming soon)</option>
+        <option value="pubsub" disabled>Pub/Sub (coming soon)</option>
+      </select>
+      <label for="newConnectorTopic">Topic Name</label>
+      <input id="newConnectorTopic" placeholder="e.g. dynamicmasking.demo.input" />
+      <label for="newConnectorBootstrap">Bootstrap Servers</label>
+      <input id="newConnectorBootstrap" value="kafka:19092" />
+      <p class="hint">
+        <a href="#" id="useEdi270ExampleLink">Use example: EDI270</a>
+        — a live synthetic eligibility-inquiry topic (see <code>edi270_producer.py</code>).
+      </p>
+    </div>
+
+    <label for="newConnectorName">Connector Name</label>
+    <input id="newConnectorName" placeholder="e.g. C1-Dev" />
+    <div id="genericConnectorTypeField">
+      <label for="newConnectorType">Type</label>
+      <input id="newConnectorType" placeholder="e.g. BCFIPS AES-CBC-CTS / PostgreSQL" />
+    </div>
+    <div id="tableConnectorFields" style="display:none">
+      <label for="newConnectorTable">Table Name</label>
+      <input id="newConnectorTable" placeholder="customers" />
+      <p class="hint">The Rule Set tab reads this table's real columns live from Postgres (see
+        <code>docker/postgres/init.sql</code>). Defaults to <code>customers</code>, the only demo
+        table, if left blank.</p>
+    </div>
+    <p id="addConnectorStatus" class="status"></p>
+    <div class="button-row">
+      <button type="button" class="secondary" data-close-modal="addConnectorModal">Cancel</button>
+      <button type="button" class="primary" id="saveConnectorBtn">Save</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -134,6 +828,1083 @@ function linesFrom(textarea) {
   return textarea.value.split('\n').map(v => v.trim()).filter(v => v.length > 0);
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderResultsTable(container, columns, rows, maskedColumns) {
+  maskedColumns = maskedColumns || [];
+  if (!columns || columns.length === 0) {
+    container.innerHTML = '<p class="hint">No rows.</p>';
+    return;
+  }
+  let html = '<table class="results"><thead><tr>';
+  columns.forEach(c => {
+    const isMasked = maskedColumns.includes(c);
+    html += `<th${isMasked ? ' class="masked-column"' : ''}>${escapeHtml(c)}${isMasked ? '<span class="badge">masked</span>' : ''}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+  rows.forEach(row => {
+    html += '<tr>';
+    row.forEach(v => { html += `<td>${escapeHtml(v)}</td>`; });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+/* ==================== Shared filterable/sortable data table ==================== */
+// Matches the Delphix product's Environments/Connectors table chrome: a funnel icon opens an
+// inline text filter per column, a kebab icon offers explicit Sort ascending/descending (in
+// addition to clicking the column label itself, which cycles asc/desc the same way the Live
+// Messages tables already do), and a "Reset" chip -- rendered above the table, only once a
+// filter/sort is active -- clears everything. Row actions render as a single "..." button per
+// row instead of inline text links, opening a small menu. Used by renderEnvironmentsTable() and
+// renderConnectorsTable() below; the many other tables in this demo (Credits, SQL results, Live
+// Messages) are static reference/output tables, not filterable entity lists, so they keep using
+// table.results/table.live-messages-table directly instead of this helper.
+let openDataTablePopover = null;
+
+function closeDataTablePopovers() {
+  if (openDataTablePopover) { openDataTablePopover.classList.remove('open'); openDataTablePopover = null; }
+}
+document.addEventListener('click', (e) => {
+  if (openDataTablePopover && !e.target.closest('.th-popover, .th-icon-btn, .row-actions-btn')) {
+    closeDataTablePopovers();
+  }
+});
+
+function togglePopover(el) {
+  if (openDataTablePopover === el) { closeDataTablePopovers(); return; }
+  closeDataTablePopovers();
+  el.classList.add('open');
+  openDataTablePopover = el;
+}
+
+// Filtering/sorting compares against the rendered cell's own text (HTML stripped), so a column
+// that renders a link (e.g. Environment name) still filters/sorts by its visible text.
+function dataTableCellText(row, col, cellHtml) {
+  const div = document.createElement('div');
+  div.innerHTML = cellHtml(row, col);
+  return (div.textContent || '').trim();
+}
+
+function renderDataTable(opts) {
+  const { containerEl, state, columns, rows, cellHtml, rowActions, emptyMessage, groupRows } = opts;
+
+  if (rows.length === 0) {
+    containerEl.innerHTML = `<p class="empty-hint">${escapeHtml(emptyMessage || 'No results.')}</p>`;
+    return;
+  }
+
+  let filtered = rows;
+  Object.keys(state.filters || {}).forEach(key => {
+    const needle = (state.filters[key] || '').trim().toLowerCase();
+    if (!needle) return;
+    const col = columns.find(c => c.key === key);
+    filtered = filtered.filter(row => dataTableCellText(row, col, cellHtml).toLowerCase().includes(needle));
+  });
+
+  if (state.sortKey) {
+    const col = columns.find(c => c.key === state.sortKey);
+    filtered = [...filtered].sort((a, b) => {
+      const av = dataTableCellText(a, col, cellHtml);
+      const bv = dataTableCellText(b, col, cellHtml);
+      const cmp = av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' });
+      return state.sortAsc ? cmp : -cmp;
+    });
+  }
+
+  const hasActiveFilter = Object.values(state.filters || {}).some(v => (v || '').trim());
+  const hasActiveSort = !!state.sortKey;
+  const resetChipHtml = (hasActiveFilter || hasActiveSort)
+    ? `<button type="button" class="filter-reset-chip">Reset &#10005;</button>` : '';
+
+  const groups = groupRows ? groupRows(filtered) : [{ label: null, rows: filtered }];
+  const totalRows = groups.reduce((n, g) => n + g.rows.length, 0);
+
+  if (totalRows === 0) {
+    containerEl.innerHTML = `${resetChipHtml}<p class="empty-hint">No rows match the current filter.</p>`;
+    const chip = containerEl.querySelector('.filter-reset-chip');
+    if (chip) chip.addEventListener('click', () => { state.filters = {}; state.sortKey = null; renderDataTable(opts); });
+    return;
+  }
+
+  const headerHtml = `<tr>${columns.map(col => {
+    const sortClass = state.sortKey === col.key ? (state.sortAsc ? 'sorted-asc' : 'sorted-desc') : '';
+    const filterValue = (state.filters && state.filters[col.key]) || '';
+    return `<th data-key="${col.key}" class="${sortClass}">
+      <span class="th-label">${escapeHtml(col.label)}</span>
+      ${col.filterable ? `
+        <span class="th-icons">
+          <button type="button" class="th-icon-btn filter-icon-btn" title="Filter ${escapeHtml(col.label)}">&#9660;</button>
+          <button type="button" class="th-icon-btn sort-icon-btn" title="Sort ${escapeHtml(col.label)}">&#8942;</button>
+        </span>
+        <div class="th-popover filter-popover"><input type="text" placeholder="Filter ${escapeHtml(col.label)}..." value="${escapeHtml(filterValue)}"></div>
+        <div class="th-popover sort-popover">
+          <button type="button" class="sort-menu-item" data-dir="asc">Sort ascending</button>
+          <button type="button" class="sort-menu-item" data-dir="desc">Sort descending</button>
+        </div>
+      ` : ''}
+    </th>`;
+  }).join('')}</tr>`;
+
+  const flatRows = [];
+  const bodyHtml = groups.map(group => {
+    const groupHeader = group.label
+      ? `<tr class="category-row"><td colspan="${columns.length}">${escapeHtml(group.label)}</td></tr>` : '';
+    const rowsHtml = group.rows.map(row => {
+      flatRows.push(row);
+      return `<tr>${columns.map(col => {
+        if (col.key === '__actions') return `<td class="row-actions-cell"></td>`;
+        return `<td>${cellHtml(row, col)}</td>`;
+      }).join('')}</tr>`;
+    }).join('');
+    return groupHeader + rowsHtml;
+  }).join('');
+
+  containerEl.innerHTML = `${resetChipHtml}<table class="datatable"><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
+
+  const chip = containerEl.querySelector('.filter-reset-chip');
+  if (chip) chip.addEventListener('click', () => { state.filters = {}; state.sortKey = null; renderDataTable(opts); });
+
+  containerEl.querySelectorAll('th[data-key]').forEach(th => {
+    const key = th.dataset.key;
+    const label = th.querySelector('.th-label');
+    if (label) label.addEventListener('click', () => {
+      if (state.sortKey === key) { state.sortAsc = !state.sortAsc; } else { state.sortKey = key; state.sortAsc = true; }
+      renderDataTable(opts);
+    });
+
+    const filterBtn = th.querySelector('.filter-icon-btn');
+    const filterPopover = th.querySelector('.filter-popover');
+    if (filterBtn && filterPopover) {
+      filterBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePopover(filterPopover);
+        filterPopover.querySelector('input').focus();
+      });
+      filterPopover.querySelector('input').addEventListener('click', (e) => e.stopPropagation());
+      filterPopover.querySelector('input').addEventListener('input', (e) => {
+        state.filters = state.filters || {};
+        state.filters[key] = e.target.value;
+        const caret = e.target.selectionStart;
+        renderDataTable(opts);
+        const newInput = containerEl.querySelector(`th[data-key="${key}"] .filter-popover input`);
+        if (newInput) {
+          togglePopover(newInput.closest('.filter-popover'));
+          newInput.focus();
+          newInput.setSelectionRange(caret, caret);
+        }
+      });
+    }
+
+    const sortBtn = th.querySelector('.sort-icon-btn');
+    const sortPopover = th.querySelector('.sort-popover');
+    if (sortBtn && sortPopover) {
+      sortBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(sortPopover); });
+      sortPopover.querySelectorAll('.sort-menu-item').forEach(item => {
+        item.addEventListener('click', () => {
+          state.sortKey = key;
+          state.sortAsc = item.dataset.dir === 'asc';
+          closeDataTablePopovers();
+          renderDataTable(opts);
+        });
+      });
+    }
+  });
+
+  containerEl.querySelectorAll('.row-actions-cell').forEach((cell, i) => {
+    const actions = rowActions ? rowActions(flatRows[i]) : [];
+    if (actions.length === 0) return;
+    cell.innerHTML = `<button type="button" class="row-actions-btn">&#8942;</button>
+      <div class="th-popover row-actions-menu">${actions.map((a, idx) => a.href
+        ? `<a href="${a.href}">${escapeHtml(a.label)}</a>`
+        : `<button type="button" data-action-index="${idx}">${escapeHtml(a.label)}</button>`
+      ).join('')}</div>`;
+    const btn = cell.querySelector('.row-actions-btn');
+    const menu = cell.querySelector('.row-actions-menu');
+    btn.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(menu); });
+    menu.querySelectorAll('button[data-action-index]').forEach(actionBtn => {
+      actionBtn.addEventListener('click', () => {
+        closeDataTablePopovers();
+        actions[Number(actionBtn.dataset.actionIndex)].onClick();
+      });
+    });
+  });
+}
+
+/* ==================== App state / routing ==================== */
+let APPLICATIONS = [];
+let ENVIRONMENTS = [];
+let kafkaPollTimer = null;
+let connMsgPollTimer = null;
+let currentEnvironment = null;
+
+function clearAllPollTimers() {
+  if (kafkaPollTimer) { clearInterval(kafkaPollTimer); kafkaPollTimer = null; }
+  if (connMsgPollTimer) { clearInterval(connMsgPollTimer); connMsgPollTimer = null; }
+}
+
+const CONNECTOR_INFO_BY_PURPOSE = {
+  Tokenization: { containerId: 'connectorsTable-tokenization', category: 'CRYPTO', rulesetKey: 'tokenization' },
+  Streaming: { containerId: 'connectorsTable-streaming', category: 'KAFKA', rulesetKey: 'streaming' },
+  'SQL Interception': { containerId: 'connectorsTable-sql-interception', category: 'DATABASE', rulesetKey: 'sql-interception' },
+};
+
+const connectorsTableState = {}; // containerId -> { filters, sortKey, sortAsc } -- independent per environment/category
+
+function renderConnectorsTable(containerId, category, connectors) {
+  if (!connectorsTableState[containerId]) connectorsTableState[containerId] = { filters: {}, sortKey: null, sortAsc: true };
+  const isKafka = category === 'KAFKA';
+  const columns = isKafka
+    ? [
+        { key: 'id', label: 'ID', filterable: true },
+        { key: 'name', label: 'Name', filterable: true },
+        { key: 'type', label: 'Type', filterable: true },
+        { key: 'topicName', label: 'Topic', filterable: true },
+        { key: 'bootstrapServers', label: 'Bootstrap Servers', filterable: true },
+        { key: '__actions', label: 'Actions', filterable: false },
+      ]
+    : [
+        { key: 'id', label: 'ID', filterable: true },
+        { key: 'name', label: 'Name', filterable: true },
+        { key: 'type', label: 'Type', filterable: true },
+        { key: '__actions', label: 'Actions', filterable: false },
+      ];
+
+  renderDataTable({
+    containerEl: $(containerId),
+    state: connectorsTableState[containerId],
+    columns,
+    rows: connectors,
+    groupRows: (filteredRows) => [{ label: `${category} (${filteredRows.length})`, rows: filteredRows }],
+    cellHtml: (row, col) => {
+      if (col.key === 'topicName' || col.key === 'bootstrapServers') {
+        return `<span class="mono">${escapeHtml(row[col.key] || '')}</span>`;
+      }
+      return escapeHtml(String(row[col.key] ?? ''));
+    },
+    rowActions: (row) => isKafka ? [{ label: 'Live Messages', href: `#/connectors/${row.id}/messages` }] : [],
+    emptyMessage: 'No connectors yet.',
+  });
+}
+
+let currentConnectors = [];
+let ALGORITHMS = null;
+
+async function fetchAndRenderConnectors(environmentId, purpose) {
+  const info = CONNECTOR_INFO_BY_PURPOSE[purpose];
+  if (!info) return;
+  try {
+    const res = await fetch(`/api/connectors?environmentId=${environmentId}`);
+    const body = await res.json();
+    currentConnectors = body.connectors || [];
+    renderConnectorsTable(info.containerId, info.category, currentConnectors);
+    if (purpose === 'Streaming') {
+      renderKafkaConnectorButtons();
+    }
+    await populateRulesetConnectorSelect(info.rulesetKey);
+  } catch (e) {
+    // transient fetch failure -- leave whatever was last rendered in place.
+  }
+}
+
+function renderKafkaConnectorButtons() {
+  const container = $('kafkaConnectorButtons');
+  if (currentConnectors.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  container.innerHTML = currentConnectors.map(c =>
+    `<a href="#/connectors/${c.id}/messages" class="button-link secondary-link">${escapeHtml(c.name)}</a>`
+  ).join('');
+}
+
+async function fetchAlgorithms() {
+  if (ALGORITHMS) return ALGORITHMS;
+  const res = await fetch('/api/algorithms');
+  const body = await res.json();
+  ALGORITHMS = body.algorithms || [];
+  return ALGORITHMS;
+}
+
+// Mirrors DelphixRealTimeMasking's ruleset.js buildAlgorithmSelect(): one <optgroup> per
+// framework (One-Way Masking / Tokenization), "— none —" as the unmasked default.
+function buildAlgorithmSelect(algorithms, selected) {
+  const select = document.createElement('select');
+  const noneOption = document.createElement('option');
+  noneOption.value = '';
+  noneOption.textContent = '— none —';
+  select.appendChild(noneOption);
+
+  const byFramework = new Map();
+  algorithms.forEach(algo => {
+    if (!byFramework.has(algo.framework)) byFramework.set(algo.framework, []);
+    byFramework.get(algo.framework).push(algo);
+  });
+  byFramework.forEach((entries, framework) => {
+    const group = document.createElement('optgroup');
+    group.label = framework;
+    entries.forEach(entry => {
+      const option = document.createElement('option');
+      option.value = entry.algorithm_name;
+      option.textContent = entry.algorithm_name;
+      group.appendChild(option);
+    });
+    select.appendChild(group);
+  });
+
+  select.value = selected || '';
+  return select;
+}
+
+// Same Rule Set + Workflows shell used by all 3 purposes (only the hint text and the ruleset's
+// shape -- topic/fields vs table/columns, see loadRuleset() -- differ). Injected once per
+// purpose into the empty #rulesetCard-{key} div already in the page (see rulesetCardsInitialized).
+const RULESET_CARD_HINTS = {
+  tokenization: 'Pick a connector to see the real columns on its target table (queried live from '
+    + 'Postgres) and choose an algorithm per column, grouped by framework — columns left as '
+    + '"— none —" pass through unmasked.',
+  streaming: 'Pick a connector to see the actual JSON keys on its topic (pulled live via the '
+    + 'embedded Kafka UI) and choose an algorithm per field, grouped by framework — fields left as '
+    + '"— none —" pass through unmasked. <strong>Note:</strong> <code>kafka-masking-bridge</code> '
+    + 'itself still only tokenizes <code>full_name</code>/<code>email</code>/<code>credit_card</code> '
+    + 'on the default demo topic today — "Save Ruleset" persists this mapping, but running an '
+    + 'actual masking job against an arbitrary connector\'s fields isn\'t wired up yet.',
+  'sql-interception': 'Pick a connector to see the real columns on its target table (queried live '
+    + 'from Postgres) and choose an algorithm per column, grouped by framework — columns left as '
+    + '"— none —" pass through unmasked.',
+};
+
+const rulesetCardsInitialized = new Set();
+
+function ensureRulesetCard(key) {
+  if (rulesetCardsInitialized.has(key)) return;
+  rulesetCardsInitialized.add(key);
+  $(`rulesetCard-${key}`).innerHTML = `
+    <section class="card">
+      <h2>Saved Rulesets</h2>
+      <p class="hint">One row per connector's Ruleset — "Fields Mapped" counts entries actually
+        saved below, not just suggested. Click Edit to load that connector's Ruleset for editing.</p>
+      <div id="savedRulesetsWrap-${key}" class="results-table-wrap"></div>
+    </section>
+    <section class="card" style="margin-top: 1.5rem;">
+      <h2>Rule Set</h2>
+      <p class="hint">${RULESET_CARD_HINTS[key]}</p>
+      <label for="rulesetConnectorSelect-${key}">Connector</label>
+      <select id="rulesetConnectorSelect-${key}"></select>
+      <div id="rulesetTableWrap-${key}" class="results-table-wrap"></div>
+      <button type="button" id="saveRulesetBtn-${key}" style="margin-top:0.75rem;">Save Ruleset</button>
+      <p id="rulesetStatus-${key}" class="status"></p>
+    </section>
+    <section class="card" style="margin-top: 1.5rem;">
+      <h2>Workflows</h2>
+      <p class="hint">Named run configurations tied to the connector above. At most one workflow
+        per connector is ever active — activating one deactivates any other workflow on that same
+        connector. This is bookkeeping, not a real process: this demo has no masking-workflow
+        execution engine, so "active" doesn't start or stop anything running.</p>
+      <div id="workflowsTableWrap-${key}" class="results-table-wrap"></div>
+      <div class="button-row" style="max-width: 420px;">
+        <input type="text" id="newWorkflowName-${key}" placeholder="Workflow name" />
+        <button type="button" id="addWorkflowBtn-${key}">+ Workflow</button>
+      </div>
+      <p id="workflowsStatus-${key}" class="status"></p>
+    </section>
+  `;
+
+  $(`rulesetConnectorSelect-${key}`).addEventListener('change', (event) => {
+    loadRuleset(key, event.target.value);
+    loadWorkflows(key, event.target.value);
+  });
+
+  $(`saveRulesetBtn-${key}`).addEventListener('click', async () => {
+    const connectorId = $(`rulesetConnectorSelect-${key}`).value;
+    if (!connectorId) return;
+    const fields = {};
+    $(`rulesetTableWrap-${key}`).querySelectorAll('select[data-field-name]').forEach(select => {
+      fields[select.dataset.fieldName] = select.value || null;
+    });
+    const status = $(`rulesetStatus-${key}`);
+    setStatus(status, 'Saving…', '');
+    try {
+      const res = await fetch(`/api/connectors/${connectorId}/ruleset`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'failed');
+      // Keep the Saved Rulesets summary's "Fields Mapped" count in sync without a full re-fetch --
+      // currentConnectors is the same array renderSavedRulesetsTable() reads from.
+      const connector = currentConnectors.find(c => String(c.id) === String(connectorId));
+      if (connector) connector.ruleset = body.fields;
+      renderSavedRulesetsTable(key);
+      setStatus(status, 'Saved.', 'ok');
+    } catch (e) {
+      setStatus(status, 'Failed: ' + e.message, 'err');
+    }
+  });
+
+  $(`addWorkflowBtn-${key}`).addEventListener('click', async () => {
+    const connectorId = $(`rulesetConnectorSelect-${key}`).value;
+    const nameInput = $(`newWorkflowName-${key}`);
+    const name = nameInput.value.trim();
+    if (!connectorId || !name) return;
+    const status = $(`workflowsStatus-${key}`);
+    setStatus(status, 'Creating…', '');
+    try {
+      const res = await fetch('/api/workflows', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ connectorId, name }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'failed');
+      nameInput.value = '';
+      setStatus(status, '', '');
+      await loadWorkflows(key, connectorId);
+    } catch (e) {
+      setStatus(status, 'Failed: ' + e.message, 'err');
+    }
+  });
+}
+
+// Summary table of every connector's Ruleset for this purpose -- one row per connector, sourced
+// straight from currentConnectors (each connector already carries its own saved "ruleset" dict,
+// see /api/connectors), so this needs no extra fetch. "Edit" jumps the picker below to that
+// connector. Kept in sync with the detail editor by re-rendering after every save (see
+// saveRulesetBtn's click handler in ensureRulesetCard()).
+function renderSavedRulesetsTable(key) {
+  const wrap = $(`savedRulesetsWrap-${key}`);
+  if (currentConnectors.length === 0) {
+    wrap.innerHTML = '<p class="hint">No connectors yet.</p>';
+    return;
+  }
+  const table = document.createElement('table');
+  table.className = 'results';
+  table.innerHTML = '<thead><tr><th>Connector</th><th>Topic / Table</th><th>Fields Mapped</th><th>Actions</th></tr></thead>';
+  const tbody = document.createElement('tbody');
+  currentConnectors.forEach(c => {
+    const tr = document.createElement('tr');
+
+    const nameTd = document.createElement('td');
+    nameTd.textContent = c.name;
+    tr.appendChild(nameTd);
+
+    const containerTd = document.createElement('td');
+    containerTd.className = 'mono';
+    containerTd.textContent = c.topicName || c.tableName || '—';
+    tr.appendChild(containerTd);
+
+    const count = Object.keys(c.ruleset || {}).length;
+    const mappedTd = document.createElement('td');
+    mappedTd.textContent = count === 1 ? '1 field' : `${count} fields`;
+    tr.appendChild(mappedTd);
+
+    const actionsTd = document.createElement('td');
+    const editLink = document.createElement('a');
+    editLink.href = '#';
+    editLink.textContent = 'Edit';
+    editLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      $(`rulesetConnectorSelect-${key}`).value = c.id;
+      loadRuleset(key, c.id);
+      loadWorkflows(key, c.id);
+    });
+    actionsTd.appendChild(editLink);
+    tr.appendChild(actionsTd);
+
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.innerHTML = '';
+  wrap.appendChild(table);
+}
+
+async function populateRulesetConnectorSelect(key) {
+  ensureRulesetCard(key);
+  renderSavedRulesetsTable(key);
+  const select = $(`rulesetConnectorSelect-${key}`);
+  if (currentConnectors.length === 0) {
+    select.innerHTML = '<option value="">No connectors yet — add one on the Connectors tab</option>';
+    $(`rulesetTableWrap-${key}`).innerHTML = '';
+    $(`workflowsTableWrap-${key}`).innerHTML = '';
+    setStatus($(`rulesetStatus-${key}`), '', '');
+    return;
+  }
+  select.innerHTML = currentConnectors.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  await Promise.all([loadRuleset(key, select.value), loadWorkflows(key, select.value)]);
+}
+
+// Renders the Rule Set table for whichever shape /api/connectors/{id}/ruleset returned --
+// {type: "topic", fields: [...]} for KAFKA connectors, {type: "table", columns: [...]} for
+// CRYPTO/DATABASE connectors (see get_connector_ruleset() in demo/server.py). Same interaction
+// pattern either way: an algorithm <select> per row, italicized when it's just a suggestion.
+async function loadRuleset(key, connectorId) {
+  const wrap = $(`rulesetTableWrap-${key}`);
+  const status = $(`rulesetStatus-${key}`);
+  if (!connectorId) { wrap.innerHTML = ''; return; }
+  setStatus(status, 'Loading…', '');
+  try {
+    const [algorithms, ruleset] = await Promise.all([
+      fetchAlgorithms(),
+      fetch(`/api/connectors/${connectorId}/ruleset`).then(r => r.json()),
+    ]);
+    if (ruleset.error) { setStatus(status, ruleset.error, 'err'); wrap.innerHTML = ''; return; }
+
+    const isTable = ruleset.type === 'table';
+    const items = isTable ? ruleset.columns : ruleset.fields;
+    if (!items || items.length === 0) {
+      wrap.innerHTML = `<p class="hint">${escapeHtml(ruleset.note || 'No fields found.')}</p>`;
+      setStatus(status, '', '');
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'results';
+    table.innerHTML = isTable
+      ? '<thead><tr><th>Column</th><th>Data Type</th><th>Size</th><th>Algorithm</th></tr></thead>'
+      : '<thead><tr><th>JSON Key</th><th>Algorithm</th><th>Sample Value</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+    items.forEach(item => {
+      const fieldName = isTable ? item.name : item.json_key;
+      const tr = document.createElement('tr');
+
+      const nameTd = document.createElement('td');
+      nameTd.className = 'mono';
+      nameTd.textContent = fieldName;
+      tr.appendChild(nameTd);
+
+      if (isTable) {
+        const typeTd = document.createElement('td');
+        typeTd.textContent = item.dataType;
+        tr.appendChild(typeTd);
+        const sizeTd = document.createElement('td');
+        sizeTd.textContent = item.size ?? '—';
+        tr.appendChild(sizeTd);
+      }
+
+      const algoTd = document.createElement('td');
+      const selected = item.algorithm ?? item.suggested_algorithm;
+      const algoSelect = buildAlgorithmSelect(algorithms, selected);
+      algoSelect.dataset.fieldName = fieldName;
+      if (!item.algorithm && item.suggested_algorithm) {
+        algoSelect.title = 'Guessed from the field name — review and Save to confirm.';
+        algoSelect.style.fontStyle = 'italic';
+        algoSelect.addEventListener('change', () => {
+          algoSelect.style.fontStyle = 'normal';
+          algoSelect.title = '';
+        }, { once: true });
+      }
+      algoTd.appendChild(algoSelect);
+      tr.appendChild(algoTd);
+
+      if (!isTable) {
+        const sampleTd = document.createElement('td');
+        sampleTd.textContent = item.sample_value ?? '';
+        tr.appendChild(sampleTd);
+      }
+
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.innerHTML = '';
+    wrap.appendChild(table);
+    setStatus(status, isTable
+      ? `Table: ${ruleset.table}`
+      : `Topic: ${ruleset.topic} · Message Type: ${ruleset.messageType} · Size: ${ruleset.size} bytes`, '');
+  } catch (e) {
+    setStatus(status, 'Failed: ' + e, 'err');
+  }
+}
+
+async function loadWorkflows(key, connectorId) {
+  const wrap = $(`workflowsTableWrap-${key}`);
+  if (!connectorId) { wrap.innerHTML = ''; return; }
+  try {
+    const res = await fetch(`/api/connectors/${connectorId}/workflows`);
+    const body = await res.json();
+    const workflows = body.workflows || [];
+    if (workflows.length === 0) {
+      wrap.innerHTML = '<p class="hint">No workflows yet for this connector.</p>';
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'results';
+    table.innerHTML = '<thead><tr><th>Name</th><th>Active</th><th>Actions</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+    workflows.forEach(w => {
+      const tr = document.createElement('tr');
+
+      const nameTd = document.createElement('td');
+      nameTd.textContent = w.name;
+      tr.appendChild(nameTd);
+
+      const activeTd = document.createElement('td');
+      activeTd.textContent = w.active ? 'Active' : '—';
+      tr.appendChild(activeTd);
+
+      const actionsTd = document.createElement('td');
+      if (!w.active) {
+        const activateBtn = document.createElement('button');
+        activateBtn.type = 'button';
+        activateBtn.className = 'secondary';
+        activateBtn.textContent = 'Set Active';
+        activateBtn.addEventListener('click', async () => {
+          await fetch(`/api/workflows/${w.id}/activate`, { method: 'POST' });
+          await loadWorkflows(key, connectorId);
+        });
+        actionsTd.appendChild(activateBtn);
+      }
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'secondary';
+      deleteBtn.style.marginLeft = '0.4rem';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.addEventListener('click', async () => {
+        await fetch(`/api/workflows/${w.id}`, { method: 'DELETE' });
+        await loadWorkflows(key, connectorId);
+      });
+      actionsTd.appendChild(deleteBtn);
+      tr.appendChild(actionsTd);
+
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.innerHTML = '';
+    wrap.appendChild(table);
+  } catch (e) {
+    wrap.innerHTML = `<p class="hint">Failed to load workflows: ${escapeHtml(String(e))}</p>`;
+  }
+}
+
+async function fetchApplications() {
+  const res = await fetch('/api/applications');
+  const body = await res.json();
+  APPLICATIONS = body.applications || [];
+}
+
+async function fetchEnvironments() {
+  const res = await fetch('/api/environments');
+  const body = await res.json();
+  ENVIRONMENTS = body.environments || [];
+}
+
+const envTableState = { filters: {}, sortKey: null, sortAsc: true };
+
+async function deleteEnvironmentById(id, name) {
+  if (!confirm(`Delete environment "${name}"? This also deletes its connectors.`)) return;
+  const res = await fetch(`/api/environments/${id}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const body = await res.json();
+    alert('Failed to delete: ' + (body.error || 'unknown error'));
+    return;
+  }
+  await fetchEnvironments();
+  renderEnvironmentsTable();
+}
+
+function renderEnvironmentsTable() {
+  renderDataTable({
+    containerEl: $('envTableWrap'),
+    state: envTableState,
+    columns: [
+      { key: 'id', label: 'ID', filterable: true },
+      { key: 'application', label: 'Application', filterable: true },
+      { key: 'name', label: 'Environment', filterable: true },
+      { key: 'purpose', label: 'Purpose', filterable: true },
+      { key: 'approval', label: 'Approval', filterable: true },
+      { key: '__actions', label: 'Actions', filterable: false },
+    ],
+    rows: ENVIRONMENTS.map(env => ({ ...env, approval: 'Disabled' })),
+    cellHtml: (row, col) => {
+      if (col.key === 'name') return `<a href="#/environments/${row.id}">${escapeHtml(row.name)}</a>`;
+      return escapeHtml(String(row[col.key] ?? ''));
+    },
+    rowActions: (row) => [
+      { label: 'View', href: `#/environments/${row.id}` },
+      { label: 'Delete', onClick: () => deleteEnvironmentById(row.id, row.name) },
+    ],
+    emptyMessage: 'No environments yet — click "+ Environment" to create one.',
+  });
+}
+
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  $('view-' + name).classList.add('active');
+  document.querySelectorAll('.topnav nav a').forEach(a => a.classList.remove('active'));
+  const navName = name === 'environment-detail' ? 'environments' : name;
+  const navLink = document.querySelector(`.topnav nav a[data-nav="${navName}"]`);
+  if (navLink) navLink.classList.add('active');
+}
+
+function setActiveSubtab(name) {
+  document.querySelectorAll('.subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.subtab === name));
+  document.querySelectorAll('[data-subtab-content]').forEach(el => {
+    el.style.display = el.dataset.subtabContent === name ? 'block' : 'none';
+  });
+  $('addConnectorBtn').style.display = (name === 'connectors' && currentEnvironment) ? 'inline-block' : 'none';
+}
+
+document.querySelectorAll('.subtab-btn').forEach(btn => {
+  btn.addEventListener('click', () => setActiveSubtab(btn.dataset.subtab));
+});
+
+function showEnvironmentDetail(id) {
+  const env = ENVIRONMENTS.find(e => String(e.id) === String(id));
+  clearAllPollTimers();
+  if (!env) {
+    location.hash = '#/environments';
+    return;
+  }
+  currentEnvironment = env;
+  showView('environment-detail');
+  $('detailEnvName').textContent = env.name;
+  $('breadcrumbEnvName').textContent = env.name;
+  $('detailEnvMeta').textContent = `Application: ${env.application} · Purpose: ${env.purpose} · Approval: Disabled`;
+  setActiveSubtab('jobs');
+  fetchAndRenderConnectors(env.id, env.purpose);
+
+  $('panel-tokenization').style.display = env.purpose === 'Tokenization' ? 'block' : 'none';
+  $('panel-streaming').style.display = env.purpose === 'Streaming' ? 'block' : 'none';
+  $('panel-sql-interception').style.display = env.purpose === 'SQL Interception' ? 'block' : 'none';
+
+  if (env.purpose === 'Tokenization') {
+    refreshStatus();
+  } else if (env.purpose === 'Streaming') {
+    // Built from window.location.hostname, not a hardcoded localhost, so this resolves
+    // correctly whether the demo is opened locally or on a remote (e.g. EC2) instance.
+    $('kafkaUiLink').href = `http://${window.location.hostname}:8081`;
+    kafkaSortKey = null;
+    kafkaSortAsc = true;
+    kafkaExpandedRows = new Set();
+    refreshKafkaMessages();
+    kafkaPollTimer = setInterval(refreshKafkaMessages, 2000);
+  }
+}
+
+let connMsgCurrentConnector = null;
+let connMsgSortKey = null;
+let connMsgSortAsc = true;
+let connMsgExpandedRows = new Set();
+let connMsgLastRows = [];
+let connMsgLastColumns = [];
+
+function genericCellValue(row, key) {
+  const parts = key.split('.');
+  let value = row;
+  for (const part of parts) {
+    value = (value || {})[part];
+  }
+  return value === undefined || value === null ? '' : value;
+}
+
+// Generic sortable/expandable messages table -- used by the per-connector Live Messages detail
+// view for both the default (Original/Tokenized envelope) connector and any raw-topic connector
+// (e.g. EDI270), unlike renderKafkaMessagesTable() above which is specific to the Streaming
+// environment's own always-visible Live Messages panel.
+function renderGenericMessagesTable(container, rows, columns) {
+  connMsgLastRows = rows;
+  connMsgLastColumns = columns;
+
+  if (!rows.length) {
+    container.innerHTML = '<p class="hint">No messages yet.</p>';
+    return;
+  }
+
+  const indexed = rows.map((row, idx) => ({ row, idx }));
+  if (connMsgSortKey) {
+    indexed.sort((a, b) => {
+      const av = genericCellValue(a.row, connMsgSortKey);
+      const bv = genericCellValue(b.row, connMsgSortKey);
+      if (av === bv) return 0;
+      const cmp = av < bv ? -1 : 1;
+      return connMsgSortAsc ? cmp : -cmp;
+    });
+  }
+
+  let html = `<table class="results live-messages-table"><thead><tr><th class="expand-col"></th>${
+    columns.map(col => {
+      const sortClass = connMsgSortKey === col.key ? (connMsgSortAsc ? 'sorted-asc' : 'sorted-desc') : '';
+      return `<th data-key="${col.key}" class="${sortClass}">${escapeHtml(col.label)}</th>`;
+    }).join('')
+  }</tr></thead><tbody>`;
+
+  indexed.forEach(({ row, idx }) => {
+    const expanded = connMsgExpandedRows.has(idx);
+    html += `<tr class="main-row" data-idx="${idx}">
+      <td class="expand-toggle">${expanded ? '&#9662;' : '&#9656;'}</td>
+      ${columns.map(col => `<td>${escapeHtml(genericCellValue(row, col.key))}</td>`).join('')}
+    </tr>`;
+    html += `<tr class="detail-row" style="${expanded ? '' : 'display:none'}">
+      <td colspan="${columns.length + 1}">
+        <div class="json-panels">
+          <div class="json-panel"><h4>Full message</h4><pre>${escapeHtml(JSON.stringify(row.__raw !== undefined ? row.__raw : row, null, 2))}</pre></div>
+        </div>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+
+  container.querySelectorAll('th[data-key]').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if (connMsgSortKey === key) { connMsgSortAsc = !connMsgSortAsc; } else { connMsgSortKey = key; connMsgSortAsc = true; }
+      renderGenericMessagesTable(container, connMsgLastRows, connMsgLastColumns);
+    });
+  });
+
+  container.querySelectorAll('tr.main-row').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const idx = Number(tr.dataset.idx);
+      if (connMsgExpandedRows.has(idx)) { connMsgExpandedRows.delete(idx); } else { connMsgExpandedRows.add(idx); }
+      renderGenericMessagesTable(container, connMsgLastRows, connMsgLastColumns);
+    });
+  });
+}
+
+async function showConnectorMessages(connectorId) {
+  clearAllPollTimers();
+  showView('connector-messages');
+  showLoadingScreen();
+
+  let connector;
+  try {
+    const res = await fetch(`/api/connectors/${connectorId}`);
+    connector = await res.json();
+    if (!res.ok) throw new Error(connector.error || 'not found');
+  } catch (e) {
+    hideLoadingScreen();
+    location.hash = '#/environments';
+    return;
+  }
+  connMsgCurrentConnector = connector;
+
+  const env = ENVIRONMENTS.find(e => String(e.id) === String(connector.environmentId));
+  const envHash = `#/environments/${connector.environmentId}`;
+  $('connMsgEnvLink').href = envHash;
+  $('connMsgEnvLink').textContent = env ? env.name : `Environment ${connector.environmentId}`;
+  $('connMsgBackLink').href = envHash;
+  $('connMsgConnectorName').textContent = connector.name;
+  $('connMsgTitle').textContent = `${connector.name} Live Messages`;
+  $('connMsgMeta').textContent = `Type: ${connector.type}`;
+  $('connMsgTopic').textContent = connector.topicName || 'dynamicmasking.demo.output (default)';
+  $('connMsgBootstrap').textContent = connector.bootstrapServers || '—';
+
+  const isDefaultTopic = !connector.topicName || connector.topicName === 'dynamicmasking.demo.output';
+  const refresh = isDefaultTopic ? refreshDefaultConnectorMessages : refreshGenericConnectorMessages;
+  connMsgSortKey = null;
+  connMsgSortAsc = true;
+  connMsgExpandedRows = new Set();
+  refresh();
+  hideLoadingScreen();
+  connMsgPollTimer = setInterval(refresh, 2000);
+}
+
+async function refreshDefaultConnectorMessages() {
+  try {
+    const res = await fetch('/api/kafka/messages');
+    const body = await res.json();
+    if (!res.ok || !Array.isArray(body)) return;
+    renderGenericMessagesTable($('connMsgResults'), body, [
+      { key: 'original.full_name', label: 'Original: full_name' },
+      { key: 'original.email', label: 'Original: email' },
+      { key: 'original.credit_card', label: 'Original: credit_card' },
+      { key: 'tokenized.full_name', label: 'Tokenized: full_name' },
+      { key: 'tokenized.email', label: 'Tokenized: email' },
+      { key: 'tokenized.credit_card', label: 'Tokenized: credit_card' },
+    ]);
+  } catch (e) {
+    // transient poll failure -- leave whatever was last rendered in place.
+  }
+}
+
+async function refreshGenericConnectorMessages() {
+  if (!connMsgCurrentConnector) return;
+  try {
+    const res = await fetch(`/api/connectors/${connMsgCurrentConnector.id}/messages?limit=50`);
+    const body = await res.json();
+    if (!res.ok) return;
+    const messages = body.messages || [];
+    if (messages.length === 0) {
+      $('connMsgResults').innerHTML = '<p class="hint">No messages found on this topic yet.</p>';
+      return;
+    }
+    // Columns are the union of raw keys across the fetched messages, in first-seen order -- this
+    // is a raw source topic (e.g. EDI270), not a fixed envelope shape like the default connector's.
+    // Raw columns first, then masked columns (computed server-side from the connector's saved
+    // Rule Set) -- same grouping style as the default connector's Original/Tokenized table.
+    const keys = [];
+    messages.forEach(m => Object.keys(m.raw || {}).forEach(k => { if (!keys.includes(k)) keys.push(k); }));
+    const columns = [
+      ...keys.map(k => ({ key: `__raw.raw.${k}`, label: `Raw: ${k}` })),
+      ...keys.map(k => ({ key: `__raw.masked.${k}`, label: `Masked: ${k}` })),
+    ];
+    renderGenericMessagesTable($('connMsgResults'), messages.map(m => ({ __raw: m })), columns);
+  } catch (e) {
+    // transient poll failure -- leave whatever was last rendered in place.
+  }
+}
+
+async function route() {
+  const hash = location.hash || '#/environments';
+  const detailMatch = hash.match(/^#\/environments\/(.+)$/);
+  const connMsgMatch = hash.match(/^#\/connectors\/(.+)\/messages$/);
+  if (hash === '#/settings') {
+    showView('settings');
+  } else if (hash === '#/credits') {
+    showView('credits');
+  } else if (connMsgMatch) {
+    await showConnectorMessages(connMsgMatch[1]);
+  } else if (detailMatch) {
+    showEnvironmentDetail(detailMatch[1]);
+  } else {
+    showView('environments');
+    renderEnvironmentsTable();
+  }
+}
+
+window.addEventListener('hashchange', route);
+
+/* ==================== Modals ==================== */
+function openModal(id) { $(id).classList.add('active'); }
+function closeModal(id) { $(id).classList.remove('active'); }
+
+document.querySelectorAll('[data-close-modal]').forEach(btn => {
+  btn.addEventListener('click', () => closeModal(btn.dataset.closeModal));
+});
+
+$('addApplicationBtn').addEventListener('click', () => {
+  $('newApplicationName').value = '';
+  setStatus($('addApplicationStatus'), '', '');
+  openModal('addApplicationModal');
+});
+
+$('saveApplicationBtn').addEventListener('click', async () => {
+  const name = $('newApplicationName').value.trim();
+  if (!name) { setStatus($('addApplicationStatus'), 'Application Name is required.', 'err'); return; }
+  try {
+    const res = await fetch('/api/applications', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+    });
+    if (!res.ok) { const body = await res.json(); throw new Error(body.error || 'failed'); }
+    await fetchApplications();
+    populateApplicationSelect();
+    closeModal('addApplicationModal');
+  } catch (e) {
+    setStatus($('addApplicationStatus'), 'Failed: ' + e.message, 'err');
+  }
+});
+
+function populateApplicationSelect() {
+  const select = $('newEnvironmentApplication');
+  if (APPLICATIONS.length === 0) {
+    select.innerHTML = '<option value="">No applications yet — click "+ Application" first</option>';
+    return;
+  }
+  select.innerHTML = APPLICATIONS.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+}
+
+$('addEnvironmentBtn').addEventListener('click', () => {
+  populateApplicationSelect();
+  $('newEnvironmentName').value = '';
+  $('newEnvironmentPurpose').value = 'Streaming';
+  setStatus($('addEnvironmentStatus'), '', '');
+  openModal('addEnvironmentModal');
+});
+
+async function saveEnvironment(andView) {
+  const application = $('newEnvironmentApplication').value;
+  const name = $('newEnvironmentName').value.trim();
+  const purpose = $('newEnvironmentPurpose').value;
+  if (!application) { setStatus($('addEnvironmentStatus'), 'Select (or create) an Application first.', 'err'); return; }
+  if (!name) { setStatus($('addEnvironmentStatus'), 'Environment Name is required.', 'err'); return; }
+  try {
+    const res = await fetch('/api/environments', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ application, name, purpose }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    await fetchEnvironments();
+    closeModal('addEnvironmentModal');
+    if (andView) {
+      location.hash = '#/environments/' + body.id;
+    } else {
+      location.hash = '#/environments';
+      route();
+    }
+  } catch (e) {
+    setStatus($('addEnvironmentStatus'), 'Failed: ' + e.message, 'err');
+  }
+}
+
+$('saveEnvironmentBtn').addEventListener('click', () => saveEnvironment(false));
+$('saveAndViewEnvironmentBtn').addEventListener('click', () => saveEnvironment(true));
+
+$('addConnectorBtn').addEventListener('click', () => {
+  const isStreaming = currentEnvironment && currentEnvironment.purpose === 'Streaming';
+  $('newConnectorName').value = '';
+  $('newConnectorType').value = isStreaming ? 'Kafka' : '';
+  $('newConnectorTopic').value = '';
+  $('newConnectorBootstrap').value = 'kafka:19092';
+  $('newConnectorStreamType').value = 'kafka';
+  $('newConnectorTable').value = '';
+  $('streamingConnectorFields').style.display = isStreaming ? 'block' : 'none';
+  $('genericConnectorTypeField').style.display = isStreaming ? 'none' : 'block';
+  $('tableConnectorFields').style.display = isStreaming ? 'none' : 'block';
+  setStatus($('addConnectorStatus'), '', '');
+  openModal('addConnectorModal');
+});
+
+$('useEdi270ExampleLink').addEventListener('click', (event) => {
+  event.preventDefault();
+  $('newConnectorName').value = 'EDI270';
+  $('newConnectorTopic').value = 'EDI270';
+  $('newConnectorBootstrap').value = 'kafka:19092';
+  $('newConnectorStreamType').value = 'kafka';
+});
+
+$('saveConnectorBtn').addEventListener('click', async () => {
+  if (!currentEnvironment) return;
+  const isStreaming = currentEnvironment.purpose === 'Streaming';
+  const name = $('newConnectorName').value.trim();
+  const payload = { environmentId: currentEnvironment.id, name };
+
+  if (isStreaming) {
+    const topic = $('newConnectorTopic').value.trim();
+    const bootstrap = $('newConnectorBootstrap').value.trim();
+    if (!name || !topic || !bootstrap) {
+      setStatus($('addConnectorStatus'), 'Name, Topic Name, and Bootstrap Servers are required.', 'err');
+      return;
+    }
+    payload.type = $('newConnectorStreamType').options[$('newConnectorStreamType').selectedIndex].text;
+    payload.topicName = topic;
+    payload.bootstrapServers = bootstrap;
+    payload.streamType = $('newConnectorStreamType').value;
+  } else {
+    const type = $('newConnectorType').value.trim();
+    if (!name || !type) { setStatus($('addConnectorStatus'), 'Name and Type are required.', 'err'); return; }
+    payload.type = type;
+    payload.tableName = $('newConnectorTable').value.trim() || null;
+  }
+
+  try {
+    const res = await fetch('/api/connectors', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    closeModal('addConnectorModal');
+    await fetchAndRenderConnectors(currentEnvironment.id, currentEnvironment.purpose);
+  } catch (e) {
+    setStatus($('addConnectorStatus'), 'Failed: ' + e.message, 'err');
+  }
+});
+
+/* ==================== Tokenization panel (unchanged behavior) ==================== */
 document.querySelectorAll('input[name=keySource]').forEach(radio => {
   radio.addEventListener('change', () => {
     const isKms = document.querySelector('input[name=keySource]:checked').value === 'KMS';
@@ -281,7 +2052,299 @@ $('reidentifyBtn').addEventListener('click', async () => {
   }
 });
 
-refreshStatus();
+$('dbConnectBtn').addEventListener('click', async () => {
+  const payload = {
+    host: $('dbHost').value,
+    port: $('dbPort').value,
+    database: $('dbName').value,
+    user: $('dbUser').value,
+    password: $('dbPassword').value,
+  };
+  $('dbConnectBtn').disabled = true;
+  setStatus($('dbConnectStatus'), 'Connecting…', '');
+  try {
+    const res = await fetch('/api/db/connect', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const body = await res.json();
+    if (res.ok && body.success) {
+      setStatus($('dbConnectStatus'), 'Connected.', 'ok');
+    } else {
+      setStatus($('dbConnectStatus'), 'Failed: ' + body.error, 'err');
+    }
+  } catch (e) {
+    setStatus($('dbConnectStatus'), 'Failed: ' + e, 'err');
+  } finally {
+    $('dbConnectBtn').disabled = false;
+  }
+});
+
+async function runDbQuery(sqlId, statusId, resultsId) {
+  const statusEl = $(statusId);
+  const resultsEl = $(resultsId);
+  setStatus(statusEl, 'Running…', '');
+  try {
+    const res = await fetch('/api/db/query', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sql: $(sqlId).value }),
+    });
+    const body = await res.json();
+    if (!res.ok) { setStatus(statusEl, 'Failed: ' + body.error, 'err'); return; }
+    renderResultsTable(resultsEl, body.columns, body.rows);
+    setStatus(statusEl, `${body.rows.length} row(s).`, 'ok');
+  } catch (e) {
+    setStatus(statusEl, 'Failed: ' + e, 'err');
+  }
+}
+
+$('runRawBtn').addEventListener('click', () => runDbQuery('rawSql', 'rawStatus', 'rawResults'));
+$('runMaskedBtn').addEventListener('click', () => runDbQuery('maskedSql', 'maskedStatus', 'maskedResults'));
+
+// SQL UDF -> scheme ("algorithm framework") -> Delphix engine algorithm class, one entry per
+// dropdown option. Keep in sync with docker-compose.yml's tokenization-api labels and
+// docker/postgres/udf.sql -- this is the browser-side copy of the same fixed mapping (the demo
+// backend has no way to hand the JVM's registries to the page directly).
+const ALGORITHM_MAPPING = {
+  full_name: {
+    mask: { sql: 'mask_fullname', scheme: 'FULL-NAME-MASK', algorithm: 'FullNameMaskingAlgorithm' },
+    tokenize: { sql: 'tokenize', scheme: 'AES-CBC-CTS', algorithm: 'TokenizationAlgorithm' },
+  },
+  email: {
+    mask: { sql: 'mask_email', scheme: 'EMAIL-MASK', algorithm: 'EmailMaskingAlgorithm' },
+    tokenize: { sql: 'tokenize', scheme: 'AES-CBC-CTS', algorithm: 'TokenizationAlgorithm' },
+  },
+  credit_card: {
+    mask: { sql: 'mask_creditcard', scheme: 'CREDIT-CARD-MASK', algorithm: 'CreditCardMaskingAlgorithm' },
+    tokenize: { sql: 'tokenize', scheme: 'AES-CBC-CTS', algorithm: 'TokenizationAlgorithm' },
+  },
+  first_name: {
+    mask: { sql: 'mask_firstname', scheme: 'FIRST-NAME-LOOKUP', algorithm: 'FirstNameMaskingAlgorithm' },
+    tokenize: { sql: 'tokenize', scheme: 'AES-CBC-CTS', algorithm: 'TokenizationAlgorithm' },
+  },
+  last_name: {
+    mask: { sql: 'mask_lastname', scheme: 'LAST-NAME-LOOKUP', algorithm: 'LastNameMaskingAlgorithm' },
+    tokenize: { sql: 'tokenize', scheme: 'AES-CBC-CTS', algorithm: 'TokenizationAlgorithm' },
+  },
+  date_of_birth: {
+    mask: { sql: 'mask_dateshift', scheme: 'DATE-SHIFT', algorithm: 'DateShiftMaskingAlgorithm' },
+    tokenize: { sql: 'tokenize', scheme: 'AES-CBC-CTS', algorithm: 'TokenizationAlgorithm' },
+  },
+  zip_code: {
+    mask: { sql: 'mask_segmentmapping', scheme: 'SEGMENT-MAPPING', algorithm: 'SegmentMappingMaskingAlgorithm' },
+    tokenize: { sql: 'tokenize', scheme: 'AES-CBC-CTS', algorithm: 'TokenizationAlgorithm' },
+  },
+};
+
+const ALGORITHM_COLUMNS = [
+  { key: 'full_name', selectId: 'algoFullName' },
+  { key: 'email', selectId: 'algoEmail' },
+  { key: 'credit_card', selectId: 'algoCreditCard' },
+  { key: 'first_name', selectId: 'algoFirstName' },
+  { key: 'last_name', selectId: 'algoLastName' },
+  { key: 'date_of_birth', selectId: 'algoDateShift' },
+  { key: 'zip_code', selectId: 'algoZipCode' },
+];
+
+function updateAlgorithmMapping() {
+  const exprs = ALGORITHM_COLUMNS.map(col => {
+    const choice = $(col.selectId).value;
+    const entry = ALGORITHM_MAPPING[col.key][choice];
+    return `${entry.sql}(${col.key}) AS ${col.key}`;
+  });
+  $('maskedSql').value = `SELECT id, ${exprs.join(',\n       ')}\nFROM customers;`;
+}
+
+ALGORITHM_COLUMNS.forEach(col => {
+  $(col.selectId).addEventListener('change', updateAlgorithmMapping);
+});
+updateAlgorithmMapping();
+
+/* ==================== Streaming (Kafka) panel ==================== */
+$('kafkaSendBtn').addEventListener('click', async () => {
+  let payload;
+  try {
+    payload = JSON.parse($('kafkaMessage').value);
+  } catch (e) {
+    setStatus($('kafkaSendStatus'), 'Message must be valid JSON: ' + e.message, 'err');
+    return;
+  }
+  setStatus($('kafkaSendStatus'), 'Sending…', '');
+  try {
+    const res = await fetch('/api/kafka/produce', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const body = await res.json();
+    if (!res.ok) { setStatus($('kafkaSendStatus'), 'Failed: ' + (body.error || JSON.stringify(body)), 'err'); return; }
+    setStatus($('kafkaSendStatus'), 'Sent — check "Live Messages" below (polls every 2s).', 'ok');
+  } catch (e) {
+    setStatus($('kafkaSendStatus'), 'Failed: ' + e, 'err');
+  }
+});
+
+// Live Messages: a merged table (each envelope already carries both original and tokenized,
+// pre-joined by kafka-masking-bridge -- no separate-topic join needed), sortable by column and
+// expandable per row, modeled on DelphixRealTimeMasking's messages.html/messages.js.
+let kafkaMessages = [];
+let kafkaSortKey = null;
+let kafkaSortAsc = true;
+let kafkaExpandedRows = new Set();
+
+const KAFKA_COLUMNS = [
+  { key: 'original.full_name', group: 'original', label: 'Full Name' },
+  { key: 'original.email', group: 'original', label: 'Email' },
+  { key: 'original.credit_card', group: 'original', label: 'Credit Card' },
+  { key: 'tokenized.full_name', group: 'tokenized', label: 'Full Name' },
+  { key: 'tokenized.email', group: 'tokenized', label: 'Email' },
+  { key: 'tokenized.credit_card', group: 'tokenized', label: 'Credit Card' },
+];
+
+function kafkaCellValue(envelope, key) {
+  const [group, field] = key.split('.');
+  return (envelope[group] || {})[field] ?? '';
+}
+
+function renderKafkaMessagesTable() {
+  const container = $('kafkaResults');
+  if (!kafkaMessages.length) {
+    container.innerHTML = '<p class="hint">No messages yet — send one above.</p>';
+    return;
+  }
+
+  const rows = kafkaMessages.map((envelope, idx) => ({ envelope, idx }));
+  if (kafkaSortKey) {
+    rows.sort((a, b) => {
+      const av = kafkaCellValue(a.envelope, kafkaSortKey);
+      const bv = kafkaCellValue(b.envelope, kafkaSortKey);
+      if (av === bv) return 0;
+      const cmp = av < bv ? -1 : 1;
+      return kafkaSortAsc ? cmp : -cmp;
+    });
+  }
+
+  let html = `
+    <table class="results live-messages-table">
+      <thead>
+        <tr>
+          <th class="expand-col" rowspan="2"></th>
+          <th colspan="3" class="group-header group-original">Original</th>
+          <th colspan="3" class="group-header group-tokenized">Tokenized</th>
+        </tr>
+        <tr>
+          ${KAFKA_COLUMNS.map(col => {
+            const sortClass = kafkaSortKey === col.key ? (kafkaSortAsc ? 'sorted-asc' : 'sorted-desc') : '';
+            return `<th data-key="${col.key}" class="${sortClass}">${col.label}</th>`;
+          }).join('')}
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  rows.forEach(({ envelope, idx }) => {
+    const expanded = kafkaExpandedRows.has(idx);
+    html += `<tr class="main-row" data-idx="${idx}">
+      <td class="expand-toggle">${expanded ? '&#9662;' : '&#9656;'}</td>
+      ${KAFKA_COLUMNS.map(col => `<td>${escapeHtml(kafkaCellValue(envelope, col.key))}</td>`).join('')}
+    </tr>`;
+    html += `<tr class="detail-row" style="${expanded ? '' : 'display:none'}">
+      <td colspan="${KAFKA_COLUMNS.length + 1}">
+        <div class="json-panels">
+          <div class="json-panel"><h4>Original</h4><pre>${escapeHtml(JSON.stringify(envelope.original, null, 2))}</pre></div>
+          <div class="json-panel"><h4>Tokenized</h4><pre>${escapeHtml(JSON.stringify(envelope.tokenized, null, 2))}</pre></div>
+        </div>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+
+  container.querySelectorAll('th[data-key]').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if (kafkaSortKey === key) { kafkaSortAsc = !kafkaSortAsc; } else { kafkaSortKey = key; kafkaSortAsc = true; }
+      renderKafkaMessagesTable();
+    });
+  });
+
+  container.querySelectorAll('tr.main-row').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const idx = Number(tr.dataset.idx);
+      if (kafkaExpandedRows.has(idx)) { kafkaExpandedRows.delete(idx); } else { kafkaExpandedRows.add(idx); }
+      renderKafkaMessagesTable();
+    });
+  });
+}
+
+async function refreshKafkaMessages() {
+  try {
+    const res = await fetch('/api/kafka/messages');
+    const body = await res.json();
+    if (!res.ok || !Array.isArray(body)) return;
+    kafkaMessages = body;
+    renderKafkaMessagesTable();
+  } catch (e) {
+    // transient poll failure -- leave whatever was last rendered in place.
+  }
+}
+
+/* ==================== SQL Interception panel ==================== */
+$('sqlInterceptionRunBtn').addEventListener('click', async () => {
+  setStatus($('sqlInterceptionStatus'), 'Running…', '');
+  try {
+    const res = await fetch('/api/sql/query', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sql: $('sqlInterceptionSql').value }),
+    });
+    const body = await res.json();
+    if (!res.ok) { setStatus($('sqlInterceptionStatus'), 'Failed: ' + (body.error || JSON.stringify(body)), 'err'); return; }
+    renderResultsTable($('sqlInterceptionResults'), body.columns, body.rows, body.maskedColumns);
+    setStatus($('sqlInterceptionStatus'),
+      `${body.rows.length} row(s), ${(body.maskedColumns || []).length} column(s) masked.`, 'ok');
+  } catch (e) {
+    setStatus($('sqlInterceptionStatus'), 'Failed: ' + e, 'err');
+  }
+});
+
+/* ==================== Settings: Delphix Engine key sync ==================== */
+$('engineSyncBtn').addEventListener('click', async () => {
+  const payload = {
+    host: $('engineHost').value.trim(),
+    username: $('engineUsername').value.trim(),
+    password: $('enginePassword').value,
+  };
+  $('engineSyncBtn').disabled = true;
+  setStatus($('engineSyncStatus'), 'Syncing — this rebuilds tokenization-api afterward, ~20-30s…', '');
+  try {
+    const res = await fetch('/api/engine/sync', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const body = await res.json();
+    if (res.ok && body.success) {
+      setStatus($('engineSyncStatus'), `Key synced. Config fingerprint: ${body.fingerprint}`, 'ok');
+    } else {
+      setStatus($('engineSyncStatus'), 'Failed: ' + body.error, 'err');
+    }
+  } catch (e) {
+    setStatus($('engineSyncStatus'), 'Failed: ' + e, 'err');
+  } finally {
+    $('engineSyncBtn').disabled = false;
+  }
+});
+
+/* ==================== Loading screen ==================== */
+function showLoadingScreen() {
+  const el = $('loadingScreen');
+  if (el) el.classList.remove('hidden');
+}
+
+function hideLoadingScreen() {
+  const el = $('loadingScreen');
+  if (el) el.classList.add('hidden');
+}
+
+/* ==================== Init ==================== */
+(async function init() {
+  await Promise.all([fetchApplications(), fetchEnvironments()]);
+  await route();
+  hideLoadingScreen();
+})();
 </script>
 </body>
 </html>

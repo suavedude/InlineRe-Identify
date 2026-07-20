@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installed at /usr/local/bin/inline-reidentify-rebuild by user-data.sh. EC2 user-data only runs
+# Installed at /usr/local/bin/dynamicmasking-rebuild by user-data.sh. EC2 user-data only runs
 # on first boot, so this is how you pick up new commits or an env-file change afterwards: SSH in
 # and run it (optionally with a ref to move to; defaults to staying on the current branch's
 # latest).
@@ -8,10 +8,14 @@
 # copy of the repo (no .git directory) -- in the latter case this just rebuilds from whatever
 # files are already on disk and skips the git-pull step, since there's no remote to pull from.
 #
-# Usage: inline-reidentify-rebuild [git-ref]
+# Usage: dynamicmasking-rebuild [git-ref]
 set -euo pipefail
 
-APP_DIR=/home/ec2-user/inline-reidentify
+# user-data.sh bakes in the actual resolved path here (see its install step) so this works
+# unattended even though APP_DIR isn't set in this script's own invocation environment; the
+# default below only matters if this file is copied/run manually instead. $HOME rather than a
+# hardcoded /home/ec2-user -- resolves correctly on EC2 (ec2-user) or any local user.
+APP_DIR="${APP_DIR:-$HOME/dynamicmasking}"
 cd "$APP_DIR"
 
 if [[ -d .git ]]; then
@@ -25,7 +29,7 @@ else
 fi
 
 ./gradlew httpServerJar rawCryptoLibs
-docker build -f Dockerfile.http-server -t inline-reidentify-tokenization-api:latest .
+docker build -f Dockerfile.http-server -t dynamicmasking-tokenization-api:latest .
 systemctl restart tokenization-api
 
 # Only touch postgres if it was actually installed here (see README.md's "Deploying the REST API
@@ -33,7 +37,7 @@ systemctl restart tokenization-api
 # the unit *file*'s existence directly, rather than `systemctl list-unit-files postgres.service`,
 # which isn't a reliable "is this installed" test -- it can exit 0 with zero matches.
 if [[ -f /etc/systemd/system/postgres.service ]]; then
-    docker build -t inline-reidentify-postgres:latest docker/postgres/
+    docker build -t dynamicmasking-postgres:latest docker/postgres/
     systemctl restart postgres
 fi
 

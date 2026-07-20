@@ -31,7 +31,7 @@ invoke() {
     args_json=$(printf '%s\n' "$@" | jq -R . | jq -s 'map([.])')
     local body
     body=$(jq -n --argjson args "$args_json" \
-        '{request_id: "local-test", cluster: "local", user: "local", database: "inlinereidentify",
+        '{request_id: "local-test", cluster: "local", user: "local", database: "dynamicmasking",
           external_function: "local", query_id: 1, num_records: ($args | length), arguments: $args}')
     curl -sf -X POST "$url" -d "$body"
 }
@@ -45,7 +45,7 @@ NAMES=()
 while IFS= read -r line; do
     [[ -n "$line" ]] && NAMES+=("$line")
 done < <(docker compose exec -T postgres \
-    psql -U inlinereidentify -d inlinereidentify -t -A -c "SELECT full_name FROM customers ORDER BY id;")
+    psql -U dynamicmasking -d dynamicmasking -t -A -c "SELECT full_name FROM customers ORDER BY id;")
 
 echo "Original values:"
 printf '  %s\n' "${NAMES[@]}"
