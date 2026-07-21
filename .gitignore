@@ -8,5 +8,7 @@ __pycache__/
 engine-keyfile.json
 # Local Environments/Applications demo store -- see demo/server.py.
 demo/environments.json
+# Local mcp-server/ config (which demo backend it targets) -- see mcp-server/mcp_server.py.
+mcp-server/mcp_config.json
 # Claude Code's local tool config (permission allowlists etc.) -- not part of the product.
 .claude/

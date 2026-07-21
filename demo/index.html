@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>DynamicMasking — Environments</title>
+<title>Delphix Dynamic Masking</title>
 <style>
   :root { --accent: #4C00FF; --accent-dark: #3D00CC; }
   body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; margin: 0; color: #1a1a1a; background: #f7f7fb; }
   a { color: var(--accent); }
-  h1 { font-size: 1.3rem; margin: 0; }
+  h1 { font-size: 1.56rem; margin: 0; }
   h2 { font-size: 1.05rem; margin-top: 0; }
   .card { border: 1px solid #ddd; border-radius: 8px; padding: 1.25rem; background: #fff; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
@@ -18,20 +18,23 @@
   textarea { font-family: ui-monospace, monospace; resize: vertical; }
   fieldset { margin-top: 0.75rem; border: 1px solid #ccc; border-radius: 4px; }
   fieldset label { display: inline-block; font-weight: normal; margin: 0.25rem 1rem 0.25rem 0; }
-  button { padding: 0.7rem 1.3rem; font-size: 1rem; border: 1px solid #333; border-radius: 4px; background: #1a1a1a; color: #fff; cursor: pointer; }
+  button { padding: 0.7rem 1.3rem; font-size: 1rem; border: 1px solid var(--accent); border-radius: 4px; background: var(--accent); color: #fff; cursor: pointer; white-space: nowrap; }
+  button:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
   button.primary { background: var(--accent); border-color: var(--accent); }
   button.primary:hover { background: var(--accent-dark); }
-  button.secondary { background: #fff; color: #1a1a1a; }
-  a.button-link { display: inline-block; padding: 0.7rem 1.3rem; font-size: 1rem; border: 1px solid #333; border-radius: 4px; background: #1a1a1a; color: #fff; text-decoration: none; margin: 0 0.4rem 0.4rem 0; }
-  a.button-link:hover { background: #333; }
-  a.button-link.secondary-link { background: #fff; color: #1a1a1a; }
-  a.button-link.secondary-link:hover { background: #f2f2f2; }
+  button.secondary { background: #fff; color: var(--accent); border-color: var(--accent); }
+  button.secondary:hover { background: #f4f2ff; border-color: var(--accent-dark); color: var(--accent-dark); }
+  a.button-link { display: inline-block; padding: 0.7rem 1.3rem; font-size: 1rem; border: 1px solid var(--accent); border-radius: 4px; background: var(--accent); color: #fff; text-decoration: none; margin: 0 0.4rem 0.4rem 0; white-space: nowrap; }
+  a.button-link:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+  a.button-link.secondary-link { background: #fff; color: var(--accent); }
+  a.button-link.secondary-link:hover { background: #f4f2ff; }
   button:disabled { opacity: 0.5; cursor: default; }
   .button-row { display: flex; gap: 0.5rem; margin-top: 0.9rem; }
   .button-row button { flex: 1; }
   .status { font-size: 0.82rem; white-space: pre-wrap; margin-top: 0.6rem; }
   .status.ok { color: #0a7a2f; }
   .status.err { color: #b00020; }
+  .redline-note { color: #b00020; font-weight: 600; border: 1px solid #b00020; border-radius: 4px; padding: 0.5rem 0.75rem; margin: 0.5rem 0 1rem; background: rgba(176, 0, 32, 0.06); }
   .hint { font-size: 0.78rem; color: #666; }
   #currentConfig { font-size: 0.8rem; color: #444; background: #f6f6f6; padding: 0.5rem 0.7rem; border-radius: 4px; }
   .db-fields { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; }
@@ -43,21 +46,34 @@
   table.results tbody tr:hover { background: #f7f7fb; }
   table.results th.masked-column { background: #eef2ff; }
   .badge { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0.05rem 0.4rem; border-radius: 3px; background: var(--accent); color: #fff; margin-left: 0.35rem; }
+  .pill { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.6rem; border-radius: 999px; }
+  .pill.running, .pill.up { background: #d7f4e1; color: #1a7f3c; }
+  .pill.paused, .pill.unknown { background: #eee; color: #666; }
+  .pill.down { background: #fbdada; color: #b00020; }
 
   /* --- App shell --- */
-  .topnav { display: flex; align-items: center; gap: 2rem; padding: 0.75rem 1.5rem; background: #fff; border-bottom: 1px solid #ddd; }
-  .topnav .brand { font-weight: 700; font-size: 1.1rem; }
-  .topnav .brand small { display: block; font-weight: 400; font-size: 0.7rem; color: #666; }
+  .topnav { display: flex; align-items: center; gap: 2rem; padding: 0.9rem 1.8rem; background: #fff; border-bottom: 1px solid #ddd; }
+  .topnav .brand { font-weight: 700; font-size: 1.32rem; display: flex; align-items: center; gap: 0.6rem; }
+  .topnav .brand img { height: 2.2em; width: auto; display: block; }
+  .topnav .brand small { display: block; font-weight: 400; font-size: 0.84rem; color: #666; }
+  .topnav .brand small.version { font-size: 0.72rem; color: #999; }
   .topnav nav { display: flex; gap: 1.5rem; }
-  .topnav nav a { text-decoration: none; color: #444; font-weight: 600; font-size: 0.92rem; padding-bottom: 0.2rem; border-bottom: 3px solid transparent; }
+  .topnav nav a { text-decoration: none; color: #444; font-weight: 600; font-size: 1.1rem; padding-bottom: 0.2rem; border-bottom: 3px solid transparent; }
   .topnav nav a.active { color: #1a1a1a; border-bottom-color: var(--accent); }
   .topnav nav a:hover { color: #1a1a1a; border-bottom-color: var(--accent); }
+  .topnav nav a.nav-placeholder { cursor: default; }
+  .topnav nav a.nav-placeholder:hover { color: #444; border-bottom-color: transparent; }
   .topnav nav .nav-item { position: relative; display: inline-block; }
   .topnav nav .nav-item > a { cursor: pointer; }
-  .topnav nav .nav-dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); min-width: 150px; z-index: 20; padding: 0.3rem 0; }
-  .topnav nav .nav-item:hover .nav-dropdown-menu { display: block; }
-  .topnav nav .nav-dropdown-menu a { display: block; padding: 0.5rem 0.9rem; font-weight: 500; font-size: 0.88rem; color: #444; }
-  .topnav nav .nav-dropdown-menu a:hover { background: #f6f6fb; }
+  .nav-dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); min-width: 150px; z-index: 20; padding: 0.3rem 0; }
+  .nav-item:hover .nav-dropdown-menu { display: block; }
+  .nav-dropdown-menu a { display: block; padding: 0.5rem 0.9rem; font-weight: 500; font-size: 0.9rem; color: #444; }
+  .nav-dropdown-menu a:hover { background: #f6f6fb; }
+  .topnav nav .nav-dropdown-menu a { font-size: 1.06rem; }
+  .list-header .nav-item { position: relative; display: inline-block; }
+  .topnav-icons { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; }
+  .icon-btn { background: none; border: none; padding: 0.3rem; color: #444; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
+  .icon-btn:hover { color: var(--accent); background: #f4f2ff; }
   main { max-width: 1100px; margin: 1.5rem auto; padding: 0 1.5rem; }
   .view { display: none; }
   .view.active { display: block; }
@@ -110,14 +126,19 @@
   /* --- Environment detail --- */
   .breadcrumb { font-size: 0.82rem; color: #666; margin-bottom: 0.5rem; }
   .breadcrumb a { text-decoration: none; }
+  .back-row { display: flex; align-items: stretch; gap: 1rem; margin-bottom: 0.6rem; }
+  .back-row .back { background: none; border: none; color: var(--accent); font-size: 1.19rem; font-weight: 400; padding: 0; white-space: nowrap; align-self: center; }
+  .back-row .back:hover { background: none; color: var(--accent-dark); }
+  .back-row .back-sep { border-left: 1px solid #ddd; }
+  .back-row .back-content { flex: 1; }
   .detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.25rem; }
-  .detail-header-left { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
-  .detail-header .back { font-size: 0.85rem; }
+  .detail-header-left { display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem; }
   .detail-header .meta { font-size: 0.85rem; color: #666; }
-  #view-environment-detail h1 { font-size: 1.9rem; }
+  #view-environment-detail h1 { font-size: 2.28rem; font-weight: 400; }
   .subtabs { display: flex; gap: 1.75rem; border-bottom: 1px solid #ddd; margin: 1.25rem 0 1.5rem; }
-  .subtab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 0.7rem 0; font-size: 1rem; font-weight: 600; color: #666; cursor: pointer; }
-  .subtab-btn.active { color: #1a1a1a; border-bottom-color: var(--accent); }
+  .subtab-btn, .settings-tab-btn, .monitor-tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 0.7rem 0; font-size: 1rem; font-weight: 600; color: #666; cursor: pointer; white-space: nowrap; }
+  .subtab-btn:hover, .settings-tab-btn:hover, .monitor-tab-btn:hover { color: #1a1a1a; }
+  .subtab-btn.active, .settings-tab-btn.active, .monitor-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
   [data-subtab-content] { display: none; }
 
   /* --- Connectors table: uses the shared table.datatable rules above, see renderConnectorsTable() --- */
@@ -136,6 +157,7 @@
   .json-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
   .json-panel h4 { margin: 0 0 0.35rem; font-size: 0.82rem; }
   .json-panel pre { margin: 0; font-size: 0.78rem; background: #fff; border: 1px solid #eee; border-radius: 4px; padding: 0.5rem; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+  .code-snippet { margin: 0.25rem 0 0.75rem; font-size: 0.82rem; background: #f6f6fb; border: 1px solid #eee; border-radius: 4px; padding: 0.5rem 0.7rem; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
 
   /* --- Credits --- */
   table.credits-table td, table.credits-table th { white-space: normal; }
@@ -186,9 +208,10 @@
 </div>
 
 <div class="topnav">
-  <div class="brand">DynamicMasking<small>Delphix — Continuous Compliance demo</small></div>
+  <div class="brand"><img src="/logo.png" alt=""><span>Delphix Dynamic Masking<small>Continuous Compliance</small><small class="version">2026.2.0.0</small></span></div>
   <nav>
     <a href="#/environments" data-nav="environments">Environments</a>
+    <a href="#/monitor" data-nav="monitor">Monitor</a>
     <a href="#/settings" data-nav="settings">Settings</a>
     <div class="nav-item">
       <a href="#/credits" data-nav="credits">Docs</a>
@@ -198,6 +221,14 @@
       </div>
     </div>
   </nav>
+  <div class="topnav-icons">
+    <button type="button" class="icon-btn" title="User">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3.2"/><path d="M6 19c1.2-3 3.4-4.5 6-4.5s4.8 1.5 6 4.5"/></svg>
+    </button>
+    <a href="https://portal.perforce.com/s/" target="_blank" rel="noopener noreferrer" class="icon-btn" title="Help">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M9.2 9.3a2.8 2.8 0 1 1 3.9 2.6c-.9.45-1.4 1-1.4 1.9v.4"/><circle cx="12" cy="17.2" r="0.1" fill="currentColor" stroke-width="1.2"/></svg>
+    </a>
+  </div>
 </div>
 
 <main>
@@ -207,8 +238,14 @@
   <div class="list-header">
     <h1>Environments</h1>
     <div class="actions">
-      <button type="button" class="secondary" id="addApplicationBtn">+ Application</button>
-      <button type="button" class="primary" id="addEnvironmentBtn">+ Environment</button>
+      <button type="button" class="secondary" id="addApplicationBtn">+&nbsp;Application</button>
+      <button type="button" class="primary" id="addEnvironmentBtn">+&nbsp;Environment</button>
+      <div class="nav-item">
+        <button type="button" class="secondary">Actions&nbsp;&#9662;</button>
+        <div class="nav-dropdown-menu row-actions-menu">
+          <a href="#" onclick="return false;" title="Not available in this demo">Export</a>
+        </div>
+      </div>
     </div>
   </div>
   <div id="envTableWrap"></div>
@@ -216,128 +253,57 @@
 
 <!-- ==================== Environment detail ==================== -->
 <div id="view-environment-detail" class="view">
-  <div class="breadcrumb"><a href="#/environments">Environments</a> &gt; <span id="breadcrumbEnvName"></span></div>
-  <div class="detail-header">
-    <div class="detail-header-left">
-      <a href="#/environments" class="back">&larr; Back</a>
-      <h1 id="detailEnvName"></h1>
-      <span class="meta" id="detailEnvMeta"></span>
+  <div class="back-row">
+    <a href="#/environments" class="back">&lsaquo; Back</a>
+    <div class="back-sep"></div>
+    <div class="back-content">
+      <div class="breadcrumb"><a href="#/environments">Environments</a> &gt; <span id="breadcrumbEnvName"></span></div>
+      <div class="detail-header">
+        <div class="detail-header-left">
+          <h1 id="detailEnvName"></h1>
+          <span class="meta" id="detailEnvMeta"></span>
+        </div>
+        <button type="button" class="primary" id="addConnectorBtn" style="display:none">+&nbsp;Connector</button>
+        <button type="button" class="primary" id="addWorkflowBtn" style="display:none">+&nbsp;Workflow</button>
+        <button type="button" class="primary" id="addRulesetBtn" style="display:none">+&nbsp;Ruleset</button>
+      </div>
     </div>
-    <button type="button" class="primary" id="addConnectorBtn" style="display:none">+ Connector</button>
   </div>
 
   <div class="subtabs">
-    <button type="button" class="subtab-btn active" data-subtab="jobs">Jobs</button>
+    <button type="button" class="subtab-btn active" data-subtab="jobs">Workflows</button>
     <button type="button" class="subtab-btn" data-subtab="rulesets">Rule Sets</button>
     <button type="button" class="subtab-btn" data-subtab="connectors">Connectors</button>
   </div>
 
   <div id="panel-tokenization" style="display:none">
     <div data-subtab-content="connectors">
-      <p id="currentConfig">Loading current configuration&hellip;</p>
-      <section class="card" id="cryptoConfigCard">
-        <h2>Crypto Configuration</h2>
-        <p id="remoteTargetNote" class="hint" style="display:none">
-          Target is a remote deployment, not the local docker-compose stack — this panel is
-          disabled because "Apply Configuration" works by running <code>docker compose</code> on
-          this machine, which has no effect on a remote instance. To reconfigure a remote
-          deployment, run <code>deploy/ec2/rebuild.sh</code> (or edit its env file directly) on the
-          target instance itself.
-        </p>
-
-        <label for="cryptoProvider">Crypto Provider</label>
-        <select id="cryptoProvider">
-          <option value="BCFIPS">BCFIPS (Bouncy Castle FIPS, approved-only)</option>
-          <option value="SunJCE">SunJCE (JDK default, no FIPS validation)</option>
-        </select>
-
-        <label for="cipherAlgorithm">Cipher Algorithm</label>
-        <input id="cipherAlgorithm" value="AES-CBC-CTS" />
-
-        <fieldset>
-          <legend>Key Source</legend>
-          <label><input type="radio" name="keySource" value="PLAINTEXT" checked> Plaintext (local dev)</label>
-          <label><input type="radio" name="keySource" value="KMS"> AWS KMS envelope</label>
-        </fieldset>
-
-        <div id="plaintextFields">
-          <label for="dekBase64">Data Encryption Key (Base64)</label>
-          <input id="dekBase64" placeholder="16/24/32-byte AES key, Base64" />
-          <button type="button" class="secondary" id="generateKeyBtn">Generate random AES-128 key</button>
-        </div>
-
-        <div id="kmsFields" style="display:none">
-          <label for="kmsKeyId">KMS Key ID (optional — pins expected CMK)</label>
-          <input id="kmsKeyId" placeholder="alias/dynamicmasking-parent-key" />
-          <label for="dekCiphertextBase64">Data Encryption Key Ciphertext (Base64)</label>
-          <input id="dekCiphertextBase64" placeholder="output of: aws kms encrypt --plaintext ..." />
-          <label for="awsRegion">AWS Region</label>
-          <input id="awsRegion" placeholder="us-east-1" />
-          <p class="hint">Resolved via <code>kms:Decrypt</code> at container startup — normally via an
-          EC2 instance role or a mounted <code>~/.aws</code> profile, neither of which need anything
-          entered below. Only fill these in if using a long-lived IAM user's keys instead (see
-          README.md's "Data encryption key: KMS envelope encryption" section) — left blank, they're
-          not sent at all.</p>
-
-          <label for="awsAccessKeyId">AWS Access Key ID (optional)</label>
-          <input id="awsAccessKeyId" type="password" autocomplete="off" placeholder="AKIA..." />
-          <label for="awsSecretAccessKey">AWS Secret Access Key (optional)</label>
-          <input id="awsSecretAccessKey" type="password" autocomplete="off" placeholder="only needed with an IAM user's static keys" />
-          <label for="awsSessionToken">AWS Session Token (optional)</label>
-          <input id="awsSessionToken" type="password" autocomplete="off" placeholder="only needed with temporary/STS credentials" />
-        </div>
-
-        <button type="button" id="applyBtn">Apply Configuration</button>
-        <p id="configStatus" class="status"></p>
-      </section>
       <div id="connectorsTable-tokenization"></div>
     </div>
 
     <div data-subtab-content="rulesets">
-      <section class="card">
-        <h2>Algorithm Config JSON (for the Delphix engine)</h2>
-        <p class="hint">This is the exact JSON shape the Delphix Continuous Compliance engine injects
-          into <code>TokenizationAlgorithm</code> when you add it as a masking algorithm (see
-          README.md) — paste it into the engine's algorithm configuration field. It's independent of
-          this demo's <code>KEY_SOURCE</code>/KMS envelope setup on the Connectors tab: the engine
-          plugin only takes the key inline (or via <code>keyFile</code>), never KMS-wrapped. Edit
-          freely; use "Sync from current config" to overwrite with what's configured there.</p>
-        <textarea id="engineConfigJson" rows="8" spellcheck="false"></textarea>
-        <div class="button-row">
-          <button type="button" class="secondary" id="syncConfigJsonBtn">Sync from current config</button>
-          <button type="button" class="secondary" id="copyConfigJsonBtn">Copy to clipboard</button>
-        </div>
-        <p id="configJsonStatus" class="status"></p>
-      </section>
       <div id="rulesetCard-tokenization" style="margin-top: 1.5rem;"></div>
     </div>
 
     <div data-subtab-content="jobs">
-      <section class="card">
-        <h2>Tokenize / Reidentify</h2>
-
-        <label for="plainValues">Plaintext values (one per line)</label>
-        <textarea id="plainValues" rows="7">4111-1111-1111-1111
-jane.doe@example.com</textarea>
-
-        <div class="button-row">
-          <button type="button" id="tokenizeBtn">Tokenize &rarr;</button>
-          <button type="button" class="secondary" id="reidentifyBtn">&larr; Reidentify</button>
-        </div>
-
-        <label for="tokenValues">Token values (one per line)</label>
-        <textarea id="tokenValues" rows="7"></textarea>
-
-        <p id="opStatus" class="status"></p>
-      </section>
+      <div id="workflowsCard-tokenization"></div>
     </div>
   </div>
 
   <div id="panel-streaming" style="display:none">
     <div data-subtab-content="connectors">
-      <section class="card">
+      <p id="kafkaTestStatus-streaming" class="status"></p>
+      <div id="connectorsTable-streaming"></div>
+    </div>
+
+    <div data-subtab-content="rulesets">
+      <div id="rulesetCard-streaming"></div>
+    </div>
+
+    <div data-subtab-content="jobs">
+      <section class="card" style="margin-bottom: 1.5rem;">
         <h2>Kafka Broker</h2>
-        <p class="hint">The <code>kafka-masking-bridge</code> connector this environment's Jobs run
+        <p class="hint">The <code>kafka-masking-bridge</code> connector this environment's Workflows run
           against — a single-node Kafka broker (KRaft mode), see <code>docker-compose.yml</code>.</p>
         <table class="results">
           <tbody>
@@ -350,39 +316,7 @@ jane.doe@example.com</textarea>
           messages, independent of this demo's own Live Messages view) via the embedded Kafka UI:</p>
         <a id="kafkaUiLink" class="button-link" href="#" target="_blank" rel="noopener">Open Kafka UI &rarr;</a>
       </section>
-      <div id="connectorsTable-streaming"></div>
-    </div>
-
-    <div data-subtab-content="rulesets">
-      <div id="rulesetCard-streaming"></div>
-    </div>
-
-    <div data-subtab-content="jobs">
-      <section class="card">
-        <h2>Streaming (Kafka)</h2>
-        <p class="hint">Send a test JSON message to the input topic; <code>kafka-masking-bridge</code>
-          tokenizes <code>full_name</code>/<code>email</code>/<code>credit_card</code> (via the same
-          <code>BatchTokenizer</code> core the REST API uses) and produces the result to the output
-          topic, shown below.</p>
-        <label for="kafkaMessage">Message JSON</label>
-        <textarea id="kafkaMessage" rows="5" spellcheck="false">{
-  "full_name": "Jane Doe",
-  "email": "jane.doe@example.com",
-  "credit_card": "4111-1111-1111-1111"
-}</textarea>
-        <button type="button" id="kafkaSendBtn">Send to Kafka</button>
-        <p id="kafkaSendStatus" class="status"></p>
-      </section>
-
-      <section class="card" style="margin-top: 1.5rem;">
-        <h2>Live Messages</h2>
-        <p class="hint">Polled from <code>kafka-masking-bridge</code>'s output topic every 2s while
-          this environment is open. Click a column header to sort; click a row to expand the full
-          Original/Tokenized JSON side by side. Jump to a specific connector's own Live Messages
-          detail page below:</p>
-        <div id="kafkaConnectorButtons" class="button-row" style="flex-wrap: wrap;"></div>
-        <div id="kafkaResults" class="results-table-wrap"></div>
-      </section>
+      <div id="workflowsCard-streaming"></div>
     </div>
   </div>
 
@@ -392,7 +326,7 @@ jane.doe@example.com</textarea>
         <h2>Database Credentials</h2>
         <p class="hint">Defaults point at this repo's local docker-compose Postgres (seeded with
           sample rows by <code>docker/postgres/init.sql</code>). Both the "SQL Functions" and
-          "SQL Interception" Jobs below run against this connection — SQL Functions via
+          "SQL Interception" Workflows below run against this connection — SQL Functions via
           <code>psql</code> inside the running <code>postgres</code> container (see
           <code>demo/server.py</code>); SQL Interception via <code>sql-interception-proxy</code>'s
           own fixed connection (env vars, not this form).</p>
@@ -428,7 +362,7 @@ jane.doe@example.com</textarea>
       <section class="card">
         <h2>SQL Interception Rule Set</h2>
         <p class="hint">Columns <code>sql-interception-proxy</code> masks transparently in any
-          <code>SELECT</code>'s result, matched by column label (case-insensitive) — see the Jobs
+          <code>SELECT</code>'s result, matched by column label (case-insensitive) — see the Workflows
           tab's "SQL Interception" panel.</p>
         <table class="results">
           <thead><tr><th>Column</th><th>Scheme</th><th>Delphix Algorithm</th></tr></thead>
@@ -442,12 +376,12 @@ jane.doe@example.com</textarea>
 
       <section class="card" style="margin-top: 1.5rem;">
         <h2>SQL Functions Rule Set (opt-in)</h2>
-        <p class="hint">Every SQL UDF the "SQL Functions" job below can call: the scheme
+        <p class="hint">Every SQL UDF the "SQL Functions" workflow below can call: the scheme
           ("algorithm framework" in <code>OneWayMaskingSchemeRegistry</code>/
           <code>TokenizationSchemeRegistry</code>) it's permanently fixed to, and the Delphix
           Continuous Compliance engine algorithm class that runs the same scheme (see
           <code>FixedSchemeMaskingAlgorithm</code>). For each demo column, the selector in
-          the last column rewrites the Masked Data SQL job.</p>
+          the last column rewrites the Masked Data SQL workflow.</p>
         <div class="tablewrap">
           <table class="results" id="algorithmMappingTable">
             <thead>
@@ -545,28 +479,13 @@ jane.doe@example.com</textarea>
     </div>
 
     <div data-subtab-content="jobs">
-      <section class="card">
-        <h2>SQL Interception</h2>
-        <p class="hint">Distinct from the "SQL Functions" jobs below: run any
-          <code>SELECT</code> below — it never calls <code>tokenize()</code>/<code>mask_*()</code> —
-          and <code>sql-interception-proxy</code> masks known-sensitive columns
-          (<code>full_name</code>/<code>email</code>/<code>credit_card</code>) in the result
-          transparently. Columns highlighted below were masked. <strong>Known limitation:</strong> an
-          aliased sensitive column (e.g. <code>SELECT email AS contact</code>) isn't recognized by
-          column label alone and passes through unmasked. This is a best-effort <code>SELECT</code>-only
-          guard, not a security boundary.</p>
-        <label for="sqlInterceptionSql">SQL</label>
-        <textarea id="sqlInterceptionSql" rows="4" spellcheck="false">SELECT id, full_name, email, credit_card FROM customers;</textarea>
-        <button type="button" id="sqlInterceptionRunBtn">Run (transparently masked)</button>
-        <p id="sqlInterceptionStatus" class="status"></p>
-        <div id="sqlInterceptionResults" class="results-table-wrap"></div>
-      </section>
+      <div id="workflowsCard-sql-interception" style="margin-bottom: 1.5rem;"></div>
 
       <div class="grid" style="margin-top: 1.5rem;">
         <section class="card">
           <h2>SQL Functions: Sensitive Data (raw)</h2>
           <p class="hint">Opt-in — masking here only happens when the query explicitly calls
-            <code>tokenize()</code>/<code>mask_*()</code>, unlike the SQL Interception job above.</p>
+            <code>tokenize()</code>/<code>mask_*()</code>, unlike the SQL Interception workflow above.</p>
           <label for="rawSql">SQL</label>
           <textarea id="rawSql" rows="4" spellcheck="false">SELECT id, full_name, email, credit_card,
        first_name, last_name, date_of_birth, zip_code
@@ -597,27 +516,309 @@ FROM customers;</textarea>
   </div>
 </div>
 
+<!-- ==================== Ruleset detail ==================== -->
+<div id="view-ruleset-detail" class="view">
+  <div class="back-row">
+    <a href="#" id="rulesetDetailBack" class="back">&lsaquo; Back</a>
+    <div class="back-sep"></div>
+    <div class="back-content">
+      <div class="breadcrumb">
+        <a href="#/environments">Environments</a> &gt;
+        <a href="#" id="rulesetDetailEnvLink"></a> &gt;
+        <span id="rulesetDetailBreadcrumbName"></span>
+      </div>
+      <div class="detail-header">
+        <div class="detail-header-left">
+          <h1 id="rulesetDetailName"></h1>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <label for="rulesetDetailConnectorSelect">Connector</label>
+  <select id="rulesetDetailConnectorSelect"></select>
+  <label for="rulesetDetailNameInput">Name</label>
+  <input type="text" id="rulesetDetailNameInput" placeholder="Ruleset name" />
+
+  <label style="margin-top:0.9rem;">Columns</label>
+  <div id="rulesetDetailRowsWrap" class="results-table-wrap"></div>
+  <div class="button-row" style="max-width: 320px;">
+    <button type="button" class="secondary" id="rulesetDetailAddRowBtn">+&nbsp;Row</button>
+  </div>
+
+  <div class="button-row" style="max-width: 300px; margin-top: 1rem;">
+    <button type="button" id="rulesetDetailSaveBtn">Save Ruleset</button>
+  </div>
+  <p id="rulesetDetailStatus" class="status"></p>
+</div>
+
+<!-- ==================== Monitor ==================== -->
+<div id="view-monitor" class="view">
+  <h1>Monitor</h1>
+
+  <div class="subtabs">
+    <button type="button" class="monitor-tab-btn" data-monitor-tab="telemetry">Telemetry</button>
+    <button type="button" class="monitor-tab-btn active" data-monitor-tab="engine-workflows">Engine Workflows</button>
+  </div>
+
+  <div data-monitor-tab-content="telemetry" style="display:none">
+    <section class="card" style="margin-top: 1rem;">
+      <h2>Health &amp; Telemetry</h2>
+      <p class="hint">Live reachability of the APIs and microservices this demo depends on.
+        <code>delphix-engine</code> and <code>mcp-server</code> show "Unknown" rather than a fake
+        status — attaching is opt-in, and the MCP server runs over stdio with no listening port to
+        probe (test it with the card below instead).</p>
+      <button type="button" class="secondary" id="healthTelemetryRefreshBtn">Refresh</button>
+      <span id="healthTelemetryClock" style="margin-left: 0.75rem; font-size: 0.9rem; color: #666; font-family: ui-monospace, monospace;"></span>
+      <p id="healthTelemetryStatus" class="status"></p>
+      <div id="healthTelemetryWrap" class="results-table-wrap" style="margin-top: 0.75rem;"></div>
+    </section>
+
+    <section class="card" style="margin-top: 1.5rem;">
+      <h2>Test MCP Server</h2>
+      <p class="hint">Calls a real <code>mcp-server/mcp_server.py</code> instance (spawned as a stdio
+        subprocess, same as an MCP chat client would) to genuinely exercise the MCP tool layer.
+        Credential-elicited tools (<code>attach_engine</code>, <code>connect_database</code>,
+        <code>configure_crypto</code>) are left out — this test box has no dialog UI to satisfy them.</p>
+
+      <label for="mcpTestToolSelect">Tool</label>
+      <select id="mcpTestToolSelect"></select>
+      <p id="mcpTestToolDescription" class="hint"></p>
+
+      <label for="mcpTestArgsInput">Arguments (JSON)</label>
+      <textarea id="mcpTestArgsInput" rows="4" spellcheck="false">{}</textarea>
+
+      <button type="button" id="mcpTestRunBtn">Run</button>
+      <p id="mcpTestStatus" class="status"></p>
+      <div class="json-panel" id="mcpTestResultWrap" style="display:none; margin-top: 0.75rem;">
+        <h4>Result</h4>
+        <pre id="mcpTestResultJson"></pre>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top: 1.5rem;">
+      <h2>Live Testing</h2>
+      <p class="hint">Pick an environment to test its API directly — independent of the Engine
+        Workflows tab.</p>
+      <label for="monitorTesterEnvSelect">Environment</label>
+      <select id="monitorTesterEnvSelect"></select>
+
+      <div id="monitorTester-tokenization" style="display:none; margin-top: 1rem;">
+        <section class="card">
+          <h2>Tokenize / Reidentify</h2>
+          <label for="plainValues">Plaintext values (one per line)</label>
+          <textarea id="plainValues" rows="7">4111-1111-1111-1111
+jane.doe@example.com</textarea>
+          <div class="button-row">
+            <button type="button" id="tokenizeBtn">Tokenize &rarr;</button>
+            <button type="button" class="secondary" id="reidentifyBtn">&larr; Reidentify</button>
+          </div>
+          <label for="tokenValues">Token values (one per line)</label>
+          <textarea id="tokenValues" rows="7"></textarea>
+          <p id="opStatus" class="status"></p>
+        </section>
+      </div>
+
+      <div id="monitorTester-streaming" style="display:none; margin-top: 1rem;">
+        <section class="card">
+          <h2>Streaming (Kafka)</h2>
+          <p class="hint">Send a test JSON message to the input topic; <code>kafka-masking-bridge</code>
+            tokenizes <code>full_name</code>/<code>email</code>/<code>credit_card</code> (via the same
+            <code>BatchTokenizer</code> core the REST API uses) and produces the result to the output
+            topic. See the result on the Engine Workflows tab — expand this environment's workflow row.</p>
+          <label for="kafkaMessage">Message JSON</label>
+          <textarea id="kafkaMessage" rows="5" spellcheck="false">{
+  "full_name": "Jane Doe",
+  "email": "jane.doe@example.com",
+  "credit_card": "4111-1111-1111-1111"
+}</textarea>
+          <button type="button" id="kafkaSendBtn">Send to Kafka</button>
+          <p id="kafkaSendStatus" class="status"></p>
+          <label style="margin-top:0.9rem;">Jump to a connector's own Live Messages page</label>
+          <div id="kafkaConnectorButtons" class="button-row" style="flex-wrap: wrap;"></div>
+        </section>
+      </div>
+
+      <div id="monitorTester-sql-interception" style="display:none; margin-top: 1rem;">
+        <section class="card">
+          <h2>SQL Interception</h2>
+          <p class="hint">Runs any <code>SELECT</code> below — it never calls
+            <code>tokenize()</code>/<code>mask_*()</code> — and <code>sql-interception-proxy</code>
+            masks known-sensitive columns (<code>full_name</code>/<code>email</code>/
+            <code>credit_card</code>) in the result transparently. Columns highlighted below were
+            masked. <strong>Known limitation:</strong> an aliased sensitive column (e.g.
+            <code>SELECT email AS contact</code>) isn't recognized by column label alone and
+            passes through unmasked. This is a best-effort <code>SELECT</code>-only guard, not a
+            security boundary.</p>
+          <label for="sqlInterceptionSql">SQL</label>
+          <textarea id="sqlInterceptionSql" rows="4" spellcheck="false">SELECT id, full_name, email, credit_card FROM customers;</textarea>
+          <button type="button" id="sqlInterceptionRunBtn">Run (transparently masked)</button>
+          <p id="sqlInterceptionStatus" class="status"></p>
+          <div id="sqlInterceptionResults" class="results-table-wrap"></div>
+        </section>
+      </div>
+
+      <p id="monitorTesterEmpty" class="hint" style="display:none">No environments yet.</p>
+    </section>
+  </div>
+
+  <div data-monitor-tab-content="engine-workflows">
+    <section class="card" style="margin-top: 1rem;">
+      <h2>Workflows</h2>
+      <p class="hint">Every Workflow across every environment, active and paused. Expand a
+        Streaming/Kafka workflow's row to see its live Original/Tokenized (or Raw/Masked) message
+        traffic; other workflows show their raw details instead.</p>
+      <div id="monitorWorkflowsTableWrap" class="results-table-wrap"></div>
+    </section>
+  </div>
+</div>
+
 <!-- ==================== Settings ==================== -->
 <div id="view-settings" class="view">
   <h1>Settings</h1>
-  <section class="card" style="margin-top: 1rem; max-width: 480px;">
-    <h2>Sync Key from Delphix Engine</h2>
-    <p class="hint">Authenticates against a live Delphix Masking Engine and syncs its configured
-      data encryption key into this deployment's <code>.env</code> — the reverse direction of
-      <code>scripts/sync-engine-config.sh</code>, which pushes a local key to the engine instead.
-      Only works against the local docker-compose stack (rebuilds <code>tokenization-api</code>
-      afterward, same as "Apply Configuration").</p>
 
-    <label for="engineHost">Engine Host / IP</label>
-    <input id="engineHost" placeholder="masking-engine.example.com" />
-    <label for="engineUsername">Username</label>
-    <input id="engineUsername" placeholder="admin" />
-    <label for="enginePassword">Password</label>
-    <input id="enginePassword" type="password" autocomplete="off" />
+  <div class="subtabs">
+    <button type="button" class="settings-tab-btn active" data-settings-tab="general">General</button>
+    <button type="button" class="settings-tab-btn" data-settings-tab="engine">Continuous Compliance Engine</button>
+    <button type="button" class="settings-tab-btn" data-settings-tab="ai-integration">AI Integration</button>
+  </div>
 
-    <button type="button" class="primary" id="engineSyncBtn" style="margin-top: 0.9rem;">Sync Key from Engine</button>
-    <p id="engineSyncStatus" class="status"></p>
-  </section>
+  <div data-settings-tab-content="general">
+    <section class="card" style="margin-top: 1rem;">
+      <h2>Algorithms</h2>
+      <p class="hint">Every algorithm this demo's tokenization-api/SQL functions know about, and the
+        SQL UDF that runs it directly against Postgres (see <code>docker/postgres/udf.sql</code>) —
+        "—" means no SQL UDF exists for that algorithm.</p>
+      <div id="algorithmsUdfTableWrap" class="results-table-wrap"></div>
+    </section>
+
+    <section class="card" style="margin-top: 1.5rem;" id="cryptoConfigCard">
+      <h2>Tokenization cryptographic configuration</h2>
+      <p class="redline-note">Privileged action, cannot be reversed. Use with caution.</p>
+      <p id="currentConfig">Loading current configuration&hellip;</p>
+      <p id="remoteTargetNote" class="hint" style="display:none">
+        Target is a remote deployment, not the local docker-compose stack — this panel is
+        disabled because "Apply Configuration" works by running <code>docker compose</code> on
+        this machine, which has no effect on a remote instance. To reconfigure a remote
+        deployment, run <code>deploy/ec2/rebuild.sh</code> (or edit its env file directly) on the
+        target instance itself.
+      </p>
+
+      <label for="cryptoProvider">Crypto Provider</label>
+      <select id="cryptoProvider">
+        <option value="BCFIPS">BCFIPS (Bouncy Castle FIPS, approved-only)</option>
+        <option value="SunJCE">SunJCE (JDK default, no FIPS validation)</option>
+      </select>
+
+      <label for="cipherAlgorithm">Cipher Algorithm</label>
+      <input id="cipherAlgorithm" value="AES-CBC-CTS" />
+
+      <fieldset>
+        <legend>Key Source</legend>
+        <label><input type="radio" name="keySource" value="PLAINTEXT" checked> Plaintext (local dev)</label>
+        <label><input type="radio" name="keySource" value="KMS"> AWS KMS envelope</label>
+      </fieldset>
+
+      <div id="plaintextFields">
+        <label for="dekBase64">Data Encryption Key (Base64)</label>
+        <input id="dekBase64" placeholder="16/24/32-byte AES key, Base64" />
+        <button type="button" class="secondary" id="generateKeyBtn">Generate random AES-128 key</button>
+      </div>
+
+      <div id="kmsFields" style="display:none">
+        <label for="kmsKeyId">KMS Key ID (optional — pins expected CMK)</label>
+        <input id="kmsKeyId" placeholder="alias/dynamicmasking-parent-key" />
+        <label for="dekCiphertextBase64">Data Encryption Key Ciphertext (Base64)</label>
+        <input id="dekCiphertextBase64" placeholder="output of: aws kms encrypt --plaintext ..." />
+        <label for="awsRegion">AWS Region</label>
+        <input id="awsRegion" placeholder="us-east-1" />
+        <p class="hint">Resolved via <code>kms:Decrypt</code> at container startup — normally via an
+        EC2 instance role or a mounted <code>~/.aws</code> profile, neither of which need anything
+        entered below. Only fill these in if using a long-lived IAM user's keys instead (see
+        README.md's "Data encryption key: KMS envelope encryption" section) — left blank, they're
+        not sent at all.</p>
+
+        <label for="awsAccessKeyId">AWS Access Key ID (optional)</label>
+        <input id="awsAccessKeyId" type="password" autocomplete="off" placeholder="AKIA..." />
+        <label for="awsSecretAccessKey">AWS Secret Access Key (optional)</label>
+        <input id="awsSecretAccessKey" type="password" autocomplete="off" placeholder="only needed with an IAM user's static keys" />
+        <label for="awsSessionToken">AWS Session Token (optional)</label>
+        <input id="awsSessionToken" type="password" autocomplete="off" placeholder="only needed with temporary/STS credentials" />
+      </div>
+
+      <button type="button" id="applyBtn">Apply Configuration</button>
+      <p id="configStatus" class="status"></p>
+    </section>
+
+    <section class="card" style="margin-top: 1.5rem;">
+      <h2>All Rule Sets</h2>
+      <p class="hint">Every named Rule Set (Workflow) across every environment and connector in this
+        demo — click a name to open that environment's Rule Sets tab.</p>
+      <div id="allRuleSetsWrap" class="results-table-wrap"></div>
+    </section>
+  </div>
+
+  <div data-settings-tab-content="engine" style="display:none">
+    <section class="card" style="margin-top: 1rem; max-width: 480px;">
+      <h2>Attach to a Delphix Continuous Compliance Engine</h2>
+      <p class="hint">Authenticates against a live Delphix Masking Engine and holds the session for
+        the Rule Sets and Sync Keys panels below — enter credentials once, reuse them for both.</p>
+
+      <label for="engineHost">Engine Host / IP</label>
+      <input id="engineHost" placeholder="masking-engine.example.com" />
+      <label for="engineUsername">Username</label>
+      <input id="engineUsername" placeholder="admin" />
+      <label for="enginePassword">Password</label>
+      <input id="enginePassword" type="password" autocomplete="off" />
+
+      <button type="button" class="primary" id="engineAttachBtn" style="margin-top: 0.9rem;">Attach</button>
+      <p id="engineAttachStatus" class="status"></p>
+    </section>
+
+    <section class="card" style="margin-top: 1.5rem;">
+      <h2>Engine Rule Sets</h2>
+      <p class="hint">Database rulesets from the attached engine, fetched live via
+        <code>GET /database-rulesets</code>. Best-effort — this demo doesn't assume a fixed response
+        shape, it renders whatever fields the engine actually returns.</p>
+      <button type="button" class="secondary" id="engineRulesetsRefreshBtn">Refresh</button>
+      <p id="engineRulesetsStatus" class="status"></p>
+      <div id="engineRulesetsWrap" class="results-table-wrap" style="margin-top: 0.75rem;"></div>
+    </section>
+
+    <section class="card" style="margin-top: 1.5rem; max-width: 480px;">
+      <h2>Sync Keys</h2>
+      <p class="redline-note">Privileged action, cannot be reversed. Use with caution.</p>
+      <p class="hint">Syncs the attached engine's configured data encryption key into this
+        deployment's <code>.env</code> — the reverse direction of
+        <code>scripts/sync-engine-config.sh</code>, which pushes a local key to the engine instead.
+        Only works against the local docker-compose stack (rebuilds <code>tokenization-api</code>
+        afterward, same as "Apply Configuration").</p>
+      <button type="button" class="primary" id="engineSyncBtn">Sync Key from Engine</button>
+      <p id="engineSyncStatus" class="status"></p>
+    </section>
+  </div>
+
+  <div data-settings-tab-content="ai-integration" style="display:none">
+    <section class="card" style="margin-top: 1rem;">
+      <h2>MCP Server</h2>
+      <p class="hint">Lets an MCP-capable chat client (Claude Desktop, Claude Code, etc.) drive this
+        demo conversationally — see <code>mcp-server/README.md</code>. It's a separate process that
+        calls this backend's own REST API; it isn't started or stopped from here.</p>
+
+      <label>Run it</label>
+      <pre class="code-snippet">python3 mcp-server/mcp_server.py</pre>
+
+      <label>Claude Code registration</label>
+      <pre class="code-snippet">claude mcp add dynamicmasking -- python3 /absolute/path/to/mcp-server/mcp_server.py</pre>
+
+      <label for="mcpDemoApiBase">Demo API Base (what the MCP server calls into this backend)</label>
+      <input id="mcpDemoApiBase" placeholder="http://localhost:4041" />
+      <p class="hint">Saved to <code>mcp-server/mcp_config.json</code> — takes effect the next time
+        the MCP server process is (re)started, not live.</p>
+      <button type="button" id="saveMcpConfigBtn">Save</button>
+      <p id="mcpConfigStatus" class="status"></p>
+    </section>
+  </div>
 </div>
 
 <!-- ==================== Credits ==================== -->
@@ -688,16 +889,21 @@ FROM customers;</textarea>
 
 <!-- ==================== Connector Live Messages detail ==================== -->
 <div id="view-connector-messages" class="view">
-  <div class="breadcrumb">
-    <a href="#/environments">Environments</a> &gt;
-    <a href="#" id="connMsgEnvLink"></a> &gt;
-    <span id="connMsgConnectorName"></span> Live Messages
-  </div>
-  <div class="detail-header">
-    <div class="detail-header-left">
-      <a href="#" id="connMsgBackLink" class="back">&larr; Back</a>
-      <h1 id="connMsgTitle"></h1>
-      <span class="meta" id="connMsgMeta"></span>
+  <div class="back-row">
+    <a href="#" id="connMsgBackLink" class="back">&lsaquo; Back</a>
+    <div class="back-sep"></div>
+    <div class="back-content">
+      <div class="breadcrumb">
+        <a href="#/environments">Environments</a> &gt;
+        <a href="#" id="connMsgEnvLink"></a> &gt;
+        <span id="connMsgConnectorName"></span> Live Messages
+      </div>
+      <div class="detail-header">
+        <div class="detail-header-left">
+          <h1 id="connMsgTitle"></h1>
+          <span class="meta" id="connMsgMeta"></span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -775,7 +981,7 @@ FROM customers;</textarea>
       <h2>Add Connector</h2>
       <button type="button" class="close" data-close-modal="addConnectorModal">&times;</button>
     </div>
-    <p class="hint">Demo metadata only — this list doesn't change what the Jobs tab actually
+    <p class="hint">Demo metadata only — this list doesn't change what the Workflows tab actually
       connects to (still the real docker-compose services).</p>
 
     <div id="streamingConnectorFields" style="display:none">
@@ -812,6 +1018,109 @@ FROM customers;</textarea>
     <div class="button-row">
       <button type="button" class="secondary" data-close-modal="addConnectorModal">Cancel</button>
       <button type="button" class="primary" id="saveConnectorBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Add/Edit Workflow modal ==================== -->
+<div class="modal-overlay" id="addWorkflowModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="addWorkflowModalTitle">Add Workflow</h2>
+      <button type="button" class="close" data-close-modal="addWorkflowModal">&times;</button>
+    </div>
+    <p class="hint">Named run configuration tied to a connector's Ruleset (1:1 — picking either
+      selects the matching one below). Only one workflow — one Ruleset + Connector combination —
+      can be active at a time per connector; activating one deactivates any other workflow on that
+      same connector.</p>
+    <label for="newWorkflowConnectorSelect">Connector</label>
+    <select id="newWorkflowConnectorSelect"></select>
+    <label for="newWorkflowRulesetSelect">Ruleset</label>
+    <select id="newWorkflowRulesetSelect"></select>
+    <label for="newWorkflowNameInput">Name</label>
+    <input type="text" id="newWorkflowNameInput" placeholder="Workflow name" />
+    <label for="newWorkflowDescriptionInput">Description</label>
+    <textarea id="newWorkflowDescriptionInput" rows="2" placeholder="Optional"></textarea>
+    <p id="addWorkflowStatus" class="status"></p>
+    <div class="button-row">
+      <button type="button" class="secondary" data-close-modal="addWorkflowModal">Cancel</button>
+      <button type="button" class="primary" id="saveWorkflowBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Algorithm Config JSON modal ==================== -->
+<div class="modal-overlay" id="algorithmConfigJsonModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Algorithm Config JSON (for the Delphix engine)</h2>
+      <button type="button" class="close" data-close-modal="algorithmConfigJsonModal">&times;</button>
+    </div>
+    <p class="hint">This is the exact JSON shape the Delphix Continuous Compliance engine injects
+      into <code>TokenizationAlgorithm</code> when you add it as a masking algorithm (see
+      README.md) — paste it into the engine's algorithm configuration field. It's independent of
+      this demo's <code>KEY_SOURCE</code>/KMS envelope setup above: the engine plugin only takes
+      the key inline (or via <code>keyFile</code>), never KMS-wrapped. Edit freely; use "Sync from
+      current config" to overwrite with what's configured above.</p>
+    <textarea id="engineConfigJson" rows="8" spellcheck="false"></textarea>
+    <div class="button-row">
+      <button type="button" class="secondary" id="syncConfigJsonBtn">Sync from current config</button>
+      <button type="button" class="secondary" id="copyConfigJsonBtn">Copy to clipboard</button>
+    </div>
+    <p id="configJsonStatus" class="status"></p>
+  </div>
+</div>
+
+<!-- ==================== Add/Edit Custom Ruleset modal ==================== -->
+<div class="modal-overlay" id="addRulesetModal">
+  <div class="modal" style="width: 640px; max-height: 84vh; overflow-y: auto;">
+    <div class="modal-header">
+      <h2 id="addRulesetModalTitle">Add Ruleset</h2>
+      <button type="button" class="close" data-close-modal="addRulesetModal">&times;</button>
+    </div>
+    <label for="newRulesetConnectorSelect">Connector</label>
+    <select id="newRulesetConnectorSelect"></select>
+    <div class="button-row" style="max-width: 420px; margin-top: 0.4rem;">
+      <button type="button" class="secondary" id="fetchTopicMessageBtn" style="display:none;">Fetch Topic Message</button>
+      <button type="button" class="secondary" id="fetchTableColumnsBtn" style="display:none;">Fetch Table Columns</button>
+    </div>
+    <select id="rulesetTableSelect" style="display:none; margin-top: 0.4rem;"></select>
+    <p id="fetchTopicMessageStatus" class="status"></p>
+    <p id="fetchTableColumnsStatus" class="status"></p>
+
+    <div style="margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid #eee;">
+      <label>Import from Delphix Engine</label>
+      <p class="hint">Column mapping from either source is best-effort — the real engine's export
+        shape hasn't been verified against a live engine from this codebase.</p>
+      <div class="button-row" style="max-width: 420px;">
+        <button type="button" class="secondary" id="fetchEngineRulesetBtn" style="display:none;">Fetch from Attached Engine</button>
+        <button type="button" class="secondary" id="importEngineRulesetCsvBtn">&#8593;&nbsp;Import Engine CSV</button>
+      </div>
+      <input type="file" id="importEngineRulesetCsvFile" accept=".csv" style="display:none" />
+      <select id="engineRulesetPickSelect" style="display:none; margin-top: 0.4rem;"></select>
+      <p id="fetchEngineRulesetStatus" class="status"></p>
+    </div>
+
+    <label for="newRulesetName">Name</label>
+    <input type="text" id="newRulesetName" placeholder="Ruleset name" />
+
+    <label style="margin-top:0.9rem;">Columns</label>
+    <div id="newRulesetRowsWrap" class="results-table-wrap"></div>
+    <div class="button-row" style="max-width: 320px;">
+      <button type="button" class="secondary" id="addRulesetRowBtn">+&nbsp;Row</button>
+      <button type="button" class="secondary" id="importRulesetRowsBtn">&#8593;&nbsp;Import Rows</button>
+    </div>
+    <input type="file" id="importRulesetRowsFile" accept=".csv" style="display:none" />
+
+    <div class="json-panel" id="rulesetTopicSampleWrap" style="display:none; margin-top: 0.75rem;">
+      <h4>Raw Sample Message</h4>
+      <pre id="rulesetTopicSampleJson"></pre>
+    </div>
+
+    <p id="addRulesetStatus" class="status"></p>
+    <div class="button-row">
+      <button type="button" class="secondary" data-close-modal="addRulesetModal">Cancel</button>
+      <button type="button" class="primary" id="saveRulesetModalBtn">Save</button>
     </div>
   </div>
 </div>
@@ -1038,13 +1347,15 @@ function renderDataTable(opts) {
 /* ==================== App state / routing ==================== */
 let APPLICATIONS = [];
 let ENVIRONMENTS = [];
-let kafkaPollTimer = null;
 let connMsgPollTimer = null;
+let healthClockTimer = null;
+let workflowMsgPollTimer = null;
 let currentEnvironment = null;
 
 function clearAllPollTimers() {
-  if (kafkaPollTimer) { clearInterval(kafkaPollTimer); kafkaPollTimer = null; }
   if (connMsgPollTimer) { clearInterval(connMsgPollTimer); connMsgPollTimer = null; }
+  if (healthClockTimer) { clearInterval(healthClockTimer); healthClockTimer = null; }
+  if (workflowMsgPollTimer) { clearInterval(workflowMsgPollTimer); workflowMsgPollTimer = null; }
 }
 
 const CONNECTOR_INFO_BY_PURPOSE = {
@@ -1086,9 +1397,44 @@ function renderConnectorsTable(containerId, category, connectors) {
       }
       return escapeHtml(String(row[col.key] ?? ''));
     },
-    rowActions: (row) => isKafka ? [{ label: 'Live Messages', href: `#/connectors/${row.id}/messages` }] : [],
+    rowActions: (row) => [
+      ...(isKafka ? [
+        { label: 'Live Messages', href: `#/connectors/${row.id}/messages` },
+        { label: 'Test', onClick: () => testKafkaConnectorHealth(row.id, containerId) },
+      ] : []),
+      { label: 'Delete', onClick: () => deleteConnectorById(row.id, row.name) },
+    ],
     emptyMessage: 'No connectors yet.',
   });
+}
+
+async function testKafkaConnectorHealth(connectorId, containerId) {
+  const status = $(`kafkaTestStatus-${containerId.replace('connectorsTable-', '')}`);
+  if (status) setStatus(status, 'Testing…', '');
+  try {
+    const res = await fetch(`/api/connectors/${connectorId}/kafka-health`);
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    if (!status) return;
+    if (body.healthy) {
+      setStatus(status, `✓ Healthy — topic '${body.topic}' has ${body.partitions ?? '—'} partition(s).`, 'ok');
+    } else {
+      setStatus(status, `✗ Not healthy — ${body.detail}`, 'err');
+    }
+  } catch (e) {
+    if (status) setStatus(status, 'Failed: ' + e.message, 'err');
+  }
+}
+
+async function deleteConnectorById(id, name) {
+  if (!confirm(`Delete connector "${name}"?`)) return;
+  const res = await fetch(`/api/connectors/${id}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const body = await res.json();
+    alert('Failed to delete: ' + (body.error || 'unknown error'));
+    return;
+  }
+  if (currentEnvironment) await fetchAndRenderConnectors(currentEnvironment.id, currentEnvironment.purpose);
 }
 
 let currentConnectors = [];
@@ -1105,7 +1451,7 @@ async function fetchAndRenderConnectors(environmentId, purpose) {
     if (purpose === 'Streaming') {
       renderKafkaConnectorButtons();
     }
-    await populateRulesetConnectorSelect(info.rulesetKey);
+    await Promise.all([populateRulesetConnectorSelect(info.rulesetKey), renderWorkflowsTable(info.rulesetKey)]);
   } catch (e) {
     // transient fetch failure -- leave whatever was last rendered in place.
   }
@@ -1128,6 +1474,47 @@ async function fetchAlgorithms() {
   const body = await res.json();
   ALGORITHMS = body.algorithms || [];
   return ALGORITHMS;
+}
+
+async function renderAlgorithmsUdfTable() {
+  const wrap = $('algorithmsUdfTableWrap');
+  const algorithms = await fetchAlgorithms();
+  const table = document.createElement('table');
+  table.className = 'results';
+  table.innerHTML = '<thead><tr><th>Framework</th><th>Algorithm</th><th>SQL UDF</th><th></th></tr></thead>';
+  const tbody = document.createElement('tbody');
+  algorithms.forEach(a => {
+    const tr = document.createElement('tr');
+    const cell = (text, mono) => {
+      const td = document.createElement('td');
+      if (mono) td.className = 'mono';
+      td.textContent = text ?? '—';
+      return td;
+    };
+    tr.appendChild(cell(a.framework));
+    tr.appendChild(cell(a.algorithm_name, true));
+    tr.appendChild(cell(a.udf, true));
+
+    const configTd = document.createElement('td');
+    if (a.framework === 'Tokenization') {
+      const configBtn = document.createElement('button');
+      configBtn.type = 'button';
+      configBtn.className = 'secondary';
+      configBtn.textContent = 'Config JSON';
+      configBtn.addEventListener('click', () => {
+        syncConfigJson();
+        setStatus($('configJsonStatus'), '', '');
+        openModal('algorithmConfigJsonModal');
+      });
+      configTd.appendChild(configBtn);
+    }
+    tr.appendChild(configTd);
+
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.innerHTML = '';
+  wrap.appendChild(table);
 }
 
 // Mirrors DelphixRealTimeMasking's ruleset.js buildAlgorithmSelect(): one <optgroup> per
@@ -1160,24 +1547,8 @@ function buildAlgorithmSelect(algorithms, selected) {
   return select;
 }
 
-// Same Rule Set + Workflows shell used by all 3 purposes (only the hint text and the ruleset's
-// shape -- topic/fields vs table/columns, see loadRuleset() -- differ). Injected once per
-// purpose into the empty #rulesetCard-{key} div already in the page (see rulesetCardsInitialized).
-const RULESET_CARD_HINTS = {
-  tokenization: 'Pick a connector to see the real columns on its target table (queried live from '
-    + 'Postgres) and choose an algorithm per column, grouped by framework — columns left as '
-    + '"— none —" pass through unmasked.',
-  streaming: 'Pick a connector to see the actual JSON keys on its topic (pulled live via the '
-    + 'embedded Kafka UI) and choose an algorithm per field, grouped by framework — fields left as '
-    + '"— none —" pass through unmasked. <strong>Note:</strong> <code>kafka-masking-bridge</code> '
-    + 'itself still only tokenizes <code>full_name</code>/<code>email</code>/<code>credit_card</code> '
-    + 'on the default demo topic today — "Save Ruleset" persists this mapping, but running an '
-    + 'actual masking job against an arbitrary connector\'s fields isn\'t wired up yet.',
-  'sql-interception': 'Pick a connector to see the real columns on its target table (queried live '
-    + 'from Postgres) and choose an algorithm per column, grouped by framework — columns left as '
-    + '"— none —" pass through unmasked.',
-};
-
+// Same Rule Set + Workflows shell used by all 3 purposes. Injected once per purpose into the
+// empty #rulesetCard-{key} div already in the page (see rulesetCardsInitialized).
 const rulesetCardsInitialized = new Set();
 
 function ensureRulesetCard(key) {
@@ -1185,277 +1556,299 @@ function ensureRulesetCard(key) {
   rulesetCardsInitialized.add(key);
   $(`rulesetCard-${key}`).innerHTML = `
     <section class="card">
-      <h2>Saved Rulesets</h2>
-      <p class="hint">One row per connector's Ruleset — "Fields Mapped" counts entries actually
-        saved below, not just suggested. Click Edit to load that connector's Ruleset for editing.</p>
-      <div id="savedRulesetsWrap-${key}" class="results-table-wrap"></div>
-    </section>
-    <section class="card" style="margin-top: 1.5rem;">
-      <h2>Rule Set</h2>
-      <p class="hint">${RULESET_CARD_HINTS[key]}</p>
-      <label for="rulesetConnectorSelect-${key}">Connector</label>
-      <select id="rulesetConnectorSelect-${key}"></select>
-      <div id="rulesetTableWrap-${key}" class="results-table-wrap"></div>
-      <button type="button" id="saveRulesetBtn-${key}" style="margin-top:0.75rem;">Save Ruleset</button>
-      <p id="rulesetStatus-${key}" class="status"></p>
-    </section>
-    <section class="card" style="margin-top: 1.5rem;">
-      <h2>Workflows</h2>
-      <p class="hint">Named run configurations tied to the connector above. At most one workflow
-        per connector is ever active — activating one deactivates any other workflow on that same
-        connector. This is bookkeeping, not a real process: this demo has no masking-workflow
-        execution engine, so "active" doesn't start or stop anything running.</p>
-      <div id="workflowsTableWrap-${key}" class="results-table-wrap"></div>
-      <div class="button-row" style="max-width: 420px;">
-        <input type="text" id="newWorkflowName-${key}" placeholder="Workflow name" />
-        <button type="button" id="addWorkflowBtn-${key}">+ Workflow</button>
-      </div>
-      <p id="workflowsStatus-${key}" class="status"></p>
+      <h2>View / Edit Ruleset</h2>
+      <p class="hint">Named, hand-built column mappings — not derived from a connector's live
+        schema. Click a row to preview its columns, or Edit to change them (including which
+        connector this ruleset is attached to).</p>
+      <div id="customRulesetsWrap-${key}" class="results-table-wrap"></div>
     </section>
   `;
-
-  $(`rulesetConnectorSelect-${key}`).addEventListener('change', (event) => {
-    loadRuleset(key, event.target.value);
-    loadWorkflows(key, event.target.value);
-  });
-
-  $(`saveRulesetBtn-${key}`).addEventListener('click', async () => {
-    const connectorId = $(`rulesetConnectorSelect-${key}`).value;
-    if (!connectorId) return;
-    const fields = {};
-    $(`rulesetTableWrap-${key}`).querySelectorAll('select[data-field-name]').forEach(select => {
-      fields[select.dataset.fieldName] = select.value || null;
-    });
-    const status = $(`rulesetStatus-${key}`);
-    setStatus(status, 'Saving…', '');
-    try {
-      const res = await fetch(`/api/connectors/${connectorId}/ruleset`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || 'failed');
-      // Keep the Saved Rulesets summary's "Fields Mapped" count in sync without a full re-fetch --
-      // currentConnectors is the same array renderSavedRulesetsTable() reads from.
-      const connector = currentConnectors.find(c => String(c.id) === String(connectorId));
-      if (connector) connector.ruleset = body.fields;
-      renderSavedRulesetsTable(key);
-      setStatus(status, 'Saved.', 'ok');
-    } catch (e) {
-      setStatus(status, 'Failed: ' + e.message, 'err');
-    }
-  });
-
-  $(`addWorkflowBtn-${key}`).addEventListener('click', async () => {
-    const connectorId = $(`rulesetConnectorSelect-${key}`).value;
-    const nameInput = $(`newWorkflowName-${key}`);
-    const name = nameInput.value.trim();
-    if (!connectorId || !name) return;
-    const status = $(`workflowsStatus-${key}`);
-    setStatus(status, 'Creating…', '');
-    try {
-      const res = await fetch('/api/workflows', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ connectorId, name }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || 'failed');
-      nameInput.value = '';
-      setStatus(status, '', '');
-      await loadWorkflows(key, connectorId);
-    } catch (e) {
-      setStatus(status, 'Failed: ' + e.message, 'err');
-    }
-  });
-}
-
-// Summary table of every connector's Ruleset for this purpose -- one row per connector, sourced
-// straight from currentConnectors (each connector already carries its own saved "ruleset" dict,
-// see /api/connectors), so this needs no extra fetch. "Edit" jumps the picker below to that
-// connector. Kept in sync with the detail editor by re-rendering after every save (see
-// saveRulesetBtn's click handler in ensureRulesetCard()).
-function renderSavedRulesetsTable(key) {
-  const wrap = $(`savedRulesetsWrap-${key}`);
-  if (currentConnectors.length === 0) {
-    wrap.innerHTML = '<p class="hint">No connectors yet.</p>';
-    return;
-  }
-  const table = document.createElement('table');
-  table.className = 'results';
-  table.innerHTML = '<thead><tr><th>Connector</th><th>Topic / Table</th><th>Fields Mapped</th><th>Actions</th></tr></thead>';
-  const tbody = document.createElement('tbody');
-  currentConnectors.forEach(c => {
-    const tr = document.createElement('tr');
-
-    const nameTd = document.createElement('td');
-    nameTd.textContent = c.name;
-    tr.appendChild(nameTd);
-
-    const containerTd = document.createElement('td');
-    containerTd.className = 'mono';
-    containerTd.textContent = c.topicName || c.tableName || '—';
-    tr.appendChild(containerTd);
-
-    const count = Object.keys(c.ruleset || {}).length;
-    const mappedTd = document.createElement('td');
-    mappedTd.textContent = count === 1 ? '1 field' : `${count} fields`;
-    tr.appendChild(mappedTd);
-
-    const actionsTd = document.createElement('td');
-    const editLink = document.createElement('a');
-    editLink.href = '#';
-    editLink.textContent = 'Edit';
-    editLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      $(`rulesetConnectorSelect-${key}`).value = c.id;
-      loadRuleset(key, c.id);
-      loadWorkflows(key, c.id);
-    });
-    actionsTd.appendChild(editLink);
-    tr.appendChild(actionsTd);
-
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-  wrap.innerHTML = '';
-  wrap.appendChild(table);
 }
 
 async function populateRulesetConnectorSelect(key) {
   ensureRulesetCard(key);
-  renderSavedRulesetsTable(key);
-  const select = $(`rulesetConnectorSelect-${key}`);
-  if (currentConnectors.length === 0) {
-    select.innerHTML = '<option value="">No connectors yet — add one on the Connectors tab</option>';
-    $(`rulesetTableWrap-${key}`).innerHTML = '';
-    $(`workflowsTableWrap-${key}`).innerHTML = '';
-    setStatus($(`rulesetStatus-${key}`), '', '');
-    return;
-  }
-  select.innerHTML = currentConnectors.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
-  await Promise.all([loadRuleset(key, select.value), loadWorkflows(key, select.value)]);
+  await renderCustomRulesetsTable(key);
 }
 
-// Renders the Rule Set table for whichever shape /api/connectors/{id}/ruleset returned --
-// {type: "topic", fields: [...]} for KAFKA connectors, {type: "table", columns: [...]} for
-// CRYPTO/DATABASE connectors (see get_connector_ruleset() in demo/server.py). Same interaction
-// pattern either way: an algorithm <select> per row, italicized when it's just a suggestion.
-async function loadRuleset(key, connectorId) {
-  const wrap = $(`rulesetTableWrap-${key}`);
-  const status = $(`rulesetStatus-${key}`);
-  if (!connectorId) { wrap.innerHTML = ''; return; }
+// Custom Rulesets are per-connector (list_rulesets(connectorId)) but shown as one combined table
+// for the whole environment -- one fetch per connector, combined, since there's no "all rulesets
+// for environment" endpoint (rulesets are scoped by connector the same way jobs/workflows were
+// before their own global Settings/Monitor tables were added).
+const expandedRulesetId = {}; // key -> id of the Custom Ruleset row currently expanded, or null
+
+async function renderCustomRulesetsTable(key) {
+  const wrap = $(`customRulesetsWrap-${key}`);
+  if (currentConnectors.length === 0) {
+    wrap.innerHTML = '<p class="hint">No connectors yet.</p>';
+    return;
+  }
+  try {
+    const perConnector = await Promise.all(currentConnectors.map(async c => {
+      const res = await fetch(`/api/connectors/${c.id}/rulesets`);
+      const body = await res.json();
+      return (body.rulesets || []).map(r => ({ ...r, connectorName: c.name }));
+    }));
+    const rulesets = perConnector.flat();
+    if (rulesets.length === 0) {
+      wrap.innerHTML = '<p class="hint">No custom Rulesets yet — click "+ Ruleset" below.</p>';
+      return;
+    }
+    const table = document.createElement('table');
+    table.className = 'results';
+    table.innerHTML = '<thead><tr><th></th><th>Name</th><th>Connector</th><th>Columns</th><th>Actions</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+    rulesets.forEach(r => {
+      const expanded = expandedRulesetId[key] === r.id;
+      const tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      const cell = (text) => { const td = document.createElement('td'); td.textContent = text; return td; };
+
+      const disclosureTd = document.createElement('td');
+      disclosureTd.textContent = expanded ? '▾' : '▸';
+      tr.appendChild(disclosureTd);
+
+      tr.appendChild(cell(r.name));
+      tr.appendChild(cell(r.connectorName));
+      tr.appendChild(cell(r.columns.length === 1 ? '1 column' : `${r.columns.length} columns`));
+
+      const actionsTd = document.createElement('td');
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'secondary';
+      editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', (e) => { e.stopPropagation(); location.hash = `#/rulesets/${r.id}`; });
+      actionsTd.appendChild(editBtn);
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'secondary';
+      deleteBtn.style.marginLeft = '0.4rem';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!confirm(`Delete Ruleset "${r.name}"?`)) return;
+        await fetch(`/api/rulesets/${r.id}`, { method: 'DELETE' });
+        await renderCustomRulesetsTable(key);
+      });
+      actionsTd.appendChild(deleteBtn);
+      tr.appendChild(actionsTd);
+
+      tr.addEventListener('click', () => {
+        expandedRulesetId[key] = expanded ? null : r.id;
+        renderCustomRulesetsTable(key);
+      });
+
+      tbody.appendChild(tr);
+
+      if (expanded) {
+        const detailTr = document.createElement('tr');
+        const detailTd = document.createElement('td');
+        detailTd.colSpan = 5;
+        const detailTable = document.createElement('table');
+        detailTable.className = 'results';
+        detailTable.innerHTML = '<thead><tr><th>Column Name</th><th>Table</th><th>Data Type</th><th>Size</th>'
+          + '<th>Delphix Algorithm</th></tr></thead>';
+        const detailTbody = document.createElement('tbody');
+        r.columns.forEach(col => {
+          const colTr = document.createElement('tr');
+          const colCell = (text) => { const td = document.createElement('td'); td.textContent = text ?? '—'; return td; };
+          colTr.appendChild(colCell(col.name));
+          colTr.appendChild(colCell(col.table));
+          colTr.appendChild(colCell(col.dataType));
+          colTr.appendChild(colCell(col.size));
+          colTr.appendChild(colCell(col.algorithm));
+          detailTbody.appendChild(colTr);
+        });
+        detailTable.appendChild(detailTbody);
+        detailTd.appendChild(detailTable);
+
+        const detailEditLink = document.createElement('a');
+        detailEditLink.href = `#/rulesets/${r.id}`;
+        detailEditLink.textContent = 'Edit this Ruleset';
+        detailEditLink.style.display = 'inline-block';
+        detailEditLink.style.marginTop = '0.5rem';
+        detailEditLink.addEventListener('click', (e) => e.stopPropagation());
+        detailTd.appendChild(detailEditLink);
+
+        detailTr.appendChild(detailTd);
+        tbody.appendChild(detailTr);
+      }
+    });
+    table.appendChild(tbody);
+    wrap.innerHTML = '';
+    wrap.appendChild(table);
+  } catch (e) {
+    wrap.innerHTML = `<p class="hint">Failed to load custom Rulesets: ${escapeHtml(String(e))}</p>`;
+  }
+}
+
+// Full-page expand of a single Custom Ruleset (reached via the Custom Rulesets table's "Edit"
+// action, #/rulesets/{rulesetId}) -- same editable Connector/Name/Columns format as the "+
+// Ruleset" modal (addRulesetRow()/collectRulesetRows()), just full-page instead of a modal, and
+// pre-loaded with that ruleset's saved data instead of starting blank.
+let rulesetDetailId = null;
+
+async function showRulesetDetail(rulesetId) {
+  showView('ruleset-detail');
+  const status = $('rulesetDetailStatus');
+  $('rulesetDetailRowsWrap').innerHTML = '';
   setStatus(status, 'Loading…', '');
   try {
-    const [algorithms, ruleset] = await Promise.all([
+    const [ruleset, algorithms] = await Promise.all([
+      fetch(`/api/rulesets/${rulesetId}`).then(r => r.json()),
       fetchAlgorithms(),
-      fetch(`/api/connectors/${connectorId}/ruleset`).then(r => r.json()),
     ]);
-    if (ruleset.error) { setStatus(status, ruleset.error, 'err'); wrap.innerHTML = ''; return; }
+    if (ruleset.error) throw new Error(ruleset.error);
+    const connector = await fetch(`/api/connectors/${ruleset.connectorId}`).then(r => r.json());
+    if (connector.error) throw new Error(connector.error);
+    rulesetDetailId = ruleset.id;
 
-    const isTable = ruleset.type === 'table';
-    const items = isTable ? ruleset.columns : ruleset.fields;
-    if (!items || items.length === 0) {
-      wrap.innerHTML = `<p class="hint">${escapeHtml(ruleset.note || 'No fields found.')}</p>`;
+    const env = ENVIRONMENTS.find(e => String(e.id) === String(connector.environmentId));
+    $('rulesetDetailName').textContent = ruleset.name;
+    $('rulesetDetailBreadcrumbName').textContent = ruleset.name;
+    $('rulesetDetailEnvLink').textContent = env ? env.name : '';
+    $('rulesetDetailEnvLink').href = env ? `#/environments/${env.id}` : '#';
+    $('rulesetDetailBack').href = env ? `#/environments/${env.id}` : '#/environments';
+
+    $('rulesetDetailNameInput').value = ruleset.name;
+
+    const envConnectors = env
+      ? (await fetch(`/api/connectors?environmentId=${env.id}`).then(r => r.json())).connectors || []
+      : [connector];
+    $('rulesetDetailConnectorSelect').innerHTML = envConnectors
+      .map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+    $('rulesetDetailConnectorSelect').value = ruleset.connectorId;
+
+    if (ruleset.columns.length > 0) {
+      ruleset.columns.forEach(col => addRulesetRow('rulesetDetailRowsWrap', col.name, col.table, col.dataType, col.size, col.algorithm));
+    } else {
+      addRulesetRow('rulesetDetailRowsWrap', '', '', '', '', null);
+    }
+    setStatus(status, '', '');
+  } catch (e) {
+    setStatus(status, 'Failed: ' + e.message, 'err');
+  }
+}
+
+$('rulesetDetailAddRowBtn').addEventListener('click', () => addRulesetRow('rulesetDetailRowsWrap', '', '', '', '', null));
+
+$('rulesetDetailSaveBtn').addEventListener('click', async () => {
+  if (!rulesetDetailId) return;
+  const status = $('rulesetDetailStatus');
+  const connectorId = $('rulesetDetailConnectorSelect').value;
+  const name = $('rulesetDetailNameInput').value.trim();
+  if (!connectorId) { setStatus(status, 'Choose a connector first.', 'err'); return; }
+  if (!name) { setStatus(status, 'Name is required.', 'err'); return; }
+  const columns = collectRulesetRows('rulesetDetailRowsWrap');
+  if (columns.length === 0) { setStatus(status, 'Add at least one column with a name.', 'err'); return; }
+  setStatus(status, 'Saving…', '');
+  try {
+    const res = await fetch(`/api/rulesets/${rulesetDetailId}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ connectorId, name, columns }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    setStatus(status, 'Saved.', 'ok');
+  } catch (e) {
+    setStatus(status, 'Failed: ' + e.message, 'err');
+  }
+});
+
+// The Workflows tab's Workflows card -- named run configurations tied to a connector's Ruleset
+// (1:1, no independent many-to-many Ruleset entity: the "Ruleset" picker in the Add/Edit modal
+// always mirrors the "Connector" picker). "active" is bookkeeping, not a real process -- this demo
+// has no masking-workflow execution engine (see server.py's add_workflow()/update_workflow()).
+// Creation/editing happens in the addWorkflowModal (top-right "+ Workflow" button, same pattern as
+// "+ Connector"); this card itself only ever shows the existing-workflows table.
+const workflowsCardsInitialized = new Set();
+
+function workflowStatusPill(active) {
+  return `<span class="pill ${active ? 'running' : 'paused'}">${active ? 'Running' : 'Paused'}</span>`;
+}
+
+function ensureWorkflowsCard(key) {
+  if (workflowsCardsInitialized.has(key)) return;
+  workflowsCardsInitialized.add(key);
+  $(`workflowsCard-${key}`).innerHTML = `
+    <section class="card">
+      <h2>Workflows</h2>
+      <p class="hint">Only one workflow — one Ruleset + Connector combination — can be active at a
+        time per connector; activating one deactivates any other workflow on that same connector.
+        This is bookkeeping, not a real process: this demo has no masking-workflow execution
+        engine.</p>
+      <div id="workflowsTableWrap-${key}" class="results-table-wrap"></div>
+      <p id="workflowsStatus-${key}" class="status"></p>
+    </section>
+  `;
+}
+
+async function renderWorkflowsTable(key) {
+  ensureWorkflowsCard(key);
+  const wrap = $(`workflowsTableWrap-${key}`);
+  const status = $(`workflowsStatus-${key}`);
+  if (currentConnectors.length === 0) {
+    wrap.innerHTML = '<p class="hint">No connectors yet — add one on the Connectors tab.</p>';
+    setStatus(status, '', '');
+    return;
+  }
+  try {
+    const perConnector = await Promise.all(currentConnectors.map(async (c) => {
+      const res = await fetch(`/api/connectors/${c.id}/workflows`);
+      const body = await res.json();
+      return (body.workflows || []).map(w => ({ ...w, connectorName: c.name }));
+    }));
+    const workflows = perConnector.flat();
+    if (workflows.length === 0) {
+      wrap.innerHTML = '<p class="hint">No workflows yet.</p>';
       setStatus(status, '', '');
       return;
     }
 
     const table = document.createElement('table');
     table.className = 'results';
-    table.innerHTML = isTable
-      ? '<thead><tr><th>Column</th><th>Data Type</th><th>Size</th><th>Algorithm</th></tr></thead>'
-      : '<thead><tr><th>JSON Key</th><th>Algorithm</th><th>Sample Value</th></tr></thead>';
-    const tbody = document.createElement('tbody');
-    items.forEach(item => {
-      const fieldName = isTable ? item.name : item.json_key;
-      const tr = document.createElement('tr');
-
-      const nameTd = document.createElement('td');
-      nameTd.className = 'mono';
-      nameTd.textContent = fieldName;
-      tr.appendChild(nameTd);
-
-      if (isTable) {
-        const typeTd = document.createElement('td');
-        typeTd.textContent = item.dataType;
-        tr.appendChild(typeTd);
-        const sizeTd = document.createElement('td');
-        sizeTd.textContent = item.size ?? '—';
-        tr.appendChild(sizeTd);
-      }
-
-      const algoTd = document.createElement('td');
-      const selected = item.algorithm ?? item.suggested_algorithm;
-      const algoSelect = buildAlgorithmSelect(algorithms, selected);
-      algoSelect.dataset.fieldName = fieldName;
-      if (!item.algorithm && item.suggested_algorithm) {
-        algoSelect.title = 'Guessed from the field name — review and Save to confirm.';
-        algoSelect.style.fontStyle = 'italic';
-        algoSelect.addEventListener('change', () => {
-          algoSelect.style.fontStyle = 'normal';
-          algoSelect.title = '';
-        }, { once: true });
-      }
-      algoTd.appendChild(algoSelect);
-      tr.appendChild(algoTd);
-
-      if (!isTable) {
-        const sampleTd = document.createElement('td');
-        sampleTd.textContent = item.sample_value ?? '';
-        tr.appendChild(sampleTd);
-      }
-
-      tbody.appendChild(tr);
-    });
-    table.appendChild(tbody);
-    wrap.innerHTML = '';
-    wrap.appendChild(table);
-    setStatus(status, isTable
-      ? `Table: ${ruleset.table}`
-      : `Topic: ${ruleset.topic} · Message Type: ${ruleset.messageType} · Size: ${ruleset.size} bytes`, '');
-  } catch (e) {
-    setStatus(status, 'Failed: ' + e, 'err');
-  }
-}
-
-async function loadWorkflows(key, connectorId) {
-  const wrap = $(`workflowsTableWrap-${key}`);
-  if (!connectorId) { wrap.innerHTML = ''; return; }
-  try {
-    const res = await fetch(`/api/connectors/${connectorId}/workflows`);
-    const body = await res.json();
-    const workflows = body.workflows || [];
-    if (workflows.length === 0) {
-      wrap.innerHTML = '<p class="hint">No workflows yet for this connector.</p>';
-      return;
-    }
-
-    const table = document.createElement('table');
-    table.className = 'results';
-    table.innerHTML = '<thead><tr><th>Name</th><th>Active</th><th>Actions</th></tr></thead>';
+    table.innerHTML = '<thead><tr><th>Name</th><th>Description</th><th>Connector</th>'
+      + '<th>Status</th><th>Actions</th></tr></thead>';
     const tbody = document.createElement('tbody');
     workflows.forEach(w => {
       const tr = document.createElement('tr');
+      const cell = (text) => { const td = document.createElement('td'); td.textContent = text ?? '—'; return td; };
 
       const nameTd = document.createElement('td');
-      nameTd.textContent = w.name;
+      const nameLink = document.createElement('a');
+      nameLink.href = `#/monitor/${w.id}`;
+      nameLink.textContent = w.name;
+      nameLink.title = 'View this workflow in Monitor > Live Testing';
+      nameTd.appendChild(nameLink);
       tr.appendChild(nameTd);
 
-      const activeTd = document.createElement('td');
-      activeTd.textContent = w.active ? 'Active' : '—';
-      tr.appendChild(activeTd);
+      tr.appendChild(cell(w.description));
+      tr.appendChild(cell(w.connectorName));
+
+      const statusTd = document.createElement('td');
+      statusTd.innerHTML = workflowStatusPill(w.active);
+      tr.appendChild(statusTd);
 
       const actionsTd = document.createElement('td');
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'secondary';
+      editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', () => openAddWorkflowModal(key, w));
+      actionsTd.appendChild(editBtn);
+
       if (!w.active) {
         const activateBtn = document.createElement('button');
         activateBtn.type = 'button';
         activateBtn.className = 'secondary';
+        activateBtn.style.marginLeft = '0.4rem';
         activateBtn.textContent = 'Set Active';
         activateBtn.addEventListener('click', async () => {
           await fetch(`/api/workflows/${w.id}/activate`, { method: 'POST' });
-          await loadWorkflows(key, connectorId);
+          await renderWorkflowsTable(key);
         });
         actionsTd.appendChild(activateBtn);
       }
+
       const deleteBtn = document.createElement('button');
       deleteBtn.type = 'button';
       deleteBtn.className = 'secondary';
@@ -1463,7 +1856,7 @@ async function loadWorkflows(key, connectorId) {
       deleteBtn.textContent = 'Delete';
       deleteBtn.addEventListener('click', async () => {
         await fetch(`/api/workflows/${w.id}`, { method: 'DELETE' });
-        await loadWorkflows(key, connectorId);
+        await renderWorkflowsTable(key);
       });
       actionsTd.appendChild(deleteBtn);
       tr.appendChild(actionsTd);
@@ -1473,10 +1866,405 @@ async function loadWorkflows(key, connectorId) {
     table.appendChild(tbody);
     wrap.innerHTML = '';
     wrap.appendChild(table);
+    setStatus(status, '', '');
   } catch (e) {
     wrap.innerHTML = `<p class="hint">Failed to load workflows: ${escapeHtml(String(e))}</p>`;
   }
 }
+
+let addWorkflowEditingId = null;
+let addWorkflowKey = null;
+
+// Rulesets are real Custom Ruleset entities scoped to one connector (unlike the pre-Custom-Ruleset
+// era, when this select just mirrored the Connector picker) -- refetched fresh every time the
+// connector changes so a just-created Ruleset always shows up by its real name.
+async function loadWorkflowRulesetOptions(connectorId, selectedRulesetId) {
+  const rulesetSelect = $('newWorkflowRulesetSelect');
+  rulesetSelect.innerHTML = '<option value="">— none —</option>';
+  if (!connectorId) return;
+  try {
+    const res = await fetch(`/api/connectors/${connectorId}/rulesets`);
+    const body = await res.json();
+    (body.rulesets || []).forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = r.name;
+      rulesetSelect.appendChild(opt);
+    });
+    rulesetSelect.value = selectedRulesetId != null ? selectedRulesetId : '';
+  } catch (e) {
+    // transient fetch failure -- leave just the "— none —" option in place.
+  }
+}
+
+async function openAddWorkflowModal(key, existingWorkflow) {
+  addWorkflowKey = key;
+  addWorkflowEditingId = existingWorkflow ? existingWorkflow.id : null;
+  $('addWorkflowModalTitle').textContent = existingWorkflow ? 'Edit Workflow' : 'Add Workflow';
+  const connectorSelect = $('newWorkflowConnectorSelect');
+  connectorSelect.innerHTML = currentConnectors.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  const connectorId = existingWorkflow ? existingWorkflow.connectorId : (currentConnectors[0] || {}).id;
+  connectorSelect.value = connectorId;
+  await loadWorkflowRulesetOptions(connectorId, existingWorkflow ? existingWorkflow.rulesetId : null);
+  $('newWorkflowNameInput').value = existingWorkflow ? existingWorkflow.name : '';
+  $('newWorkflowDescriptionInput').value = existingWorkflow ? (existingWorkflow.description || '') : '';
+  setStatus($('addWorkflowStatus'), '', '');
+  openModal('addWorkflowModal');
+}
+
+$('addWorkflowBtn').addEventListener('click', () => {
+  if (!currentEnvironment) return;
+  const key = MONITOR_TESTER_BY_PURPOSE[currentEnvironment.purpose];
+  openAddWorkflowModal(key, null);
+});
+
+$('addRulesetBtn').addEventListener('click', () => {
+  if (!currentEnvironment) return;
+  const key = MONITOR_TESTER_BY_PURPOSE[currentEnvironment.purpose];
+  openAddRulesetModal(key);
+});
+
+$('newWorkflowConnectorSelect').addEventListener('change', () => {
+  loadWorkflowRulesetOptions($('newWorkflowConnectorSelect').value, null);
+});
+
+$('saveWorkflowBtn').addEventListener('click', async () => {
+  const connectorId = $('newWorkflowConnectorSelect').value;
+  const rulesetId = $('newWorkflowRulesetSelect').value || null;
+  const name = $('newWorkflowNameInput').value.trim();
+  if (!connectorId || !name) return;
+  const status = $('addWorkflowStatus');
+  setStatus(status, addWorkflowEditingId ? 'Saving…' : 'Creating…', '');
+  try {
+    const res = await fetch(addWorkflowEditingId ? `/api/workflows/${addWorkflowEditingId}` : '/api/workflows', {
+      method: addWorkflowEditingId ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ connectorId, rulesetId, name, description: $('newWorkflowDescriptionInput').value.trim() }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    closeModal('addWorkflowModal');
+    await renderWorkflowsTable(addWorkflowKey);
+  } catch (e) {
+    setStatus(status, 'Failed: ' + e.message, 'err');
+  }
+});
+
+/* ==================== Monitor ==================== */
+const MONITOR_TESTER_BY_PURPOSE = {
+  Tokenization: 'tokenization',
+  Streaming: 'streaming',
+  'SQL Interception': 'sql-interception',
+};
+
+async function showMonitorTesterForEnvironment(envId) {
+  const env = ENVIRONMENTS.find(e => String(e.id) === String(envId));
+  document.querySelectorAll('[id^="monitorTester-"]').forEach(el => { el.style.display = 'none'; });
+  clearAllPollTimers();
+  if (!env) return;
+  currentEnvironment = env;
+  await fetchAndRenderConnectors(env.id, env.purpose);
+  const testerKey = MONITOR_TESTER_BY_PURPOSE[env.purpose];
+  if (testerKey) $(`monitorTester-${testerKey}`).style.display = 'block';
+}
+
+let monitorExpandedWorkflowId = null;
+
+// Streaming/KAFKA workflows get a live Original/Tokenized (or Raw/Masked) message view on expand,
+// reusing the exact dual-path logic and the generic renderGenericMessagesTable() already built for
+// the standalone per-connector Live Messages page (showConnectorMessages(), below) -- just
+// targeting a container inside this table's expanded row instead of that page's #connMsgResults.
+// Other workflows keep the plain JSON detail panel, since there's no live message stream for them.
+async function startWorkflowMessagePolling(workflow) {
+  const container = $(`workflowMsgWrap-${workflow.id}`);
+  if (!container) return;
+  connMsgSortKey = null;
+  connMsgSortAsc = true;
+  connMsgExpandedRows = new Set();
+  try {
+    const res = await fetch(`/api/connectors/${workflow.connectorId}`);
+    const connector = await res.json();
+    const isDefaultTopic = !res.ok || !connector.topicName || connector.topicName === 'dynamicmasking.demo.output';
+    const refresh = isDefaultTopic
+      ? () => refreshWorkflowDefaultMessages(container)
+      : () => refreshWorkflowGenericMessages(container, workflow.connectorId);
+    await refresh();
+    workflowMsgPollTimer = setInterval(refresh, 2000);
+  } catch (e) {
+    container.innerHTML = `<p class="hint">Failed to load live messages: ${escapeHtml(String(e))}</p>`;
+  }
+}
+
+async function refreshWorkflowDefaultMessages(container) {
+  try {
+    const res = await fetch('/api/kafka/messages');
+    const body = await res.json();
+    if (!res.ok || !Array.isArray(body)) return;
+    renderGenericMessagesTable(container, body, [
+      { key: 'original.full_name', label: 'Original: full_name' },
+      { key: 'original.email', label: 'Original: email' },
+      { key: 'original.credit_card', label: 'Original: credit_card' },
+      { key: 'tokenized.full_name', label: 'Tokenized: full_name' },
+      { key: 'tokenized.email', label: 'Tokenized: email' },
+      { key: 'tokenized.credit_card', label: 'Tokenized: credit_card' },
+    ]);
+  } catch (e) {
+    // transient poll failure -- leave whatever was last rendered in place.
+  }
+}
+
+async function refreshWorkflowGenericMessages(container, connectorId) {
+  try {
+    const res = await fetch(`/api/connectors/${connectorId}/messages?limit=50`);
+    const body = await res.json();
+    if (!res.ok) return;
+    const messages = body.messages || [];
+    if (messages.length === 0) {
+      container.innerHTML = '<p class="hint">No messages found on this topic yet.</p>';
+      return;
+    }
+    const keys = [];
+    messages.forEach(m => Object.keys(m.raw || {}).forEach(k => { if (!keys.includes(k)) keys.push(k); }));
+    const columns = [
+      ...keys.map(k => ({ key: `__raw.raw.${k}`, label: `Raw: ${k}` })),
+      ...keys.map(k => ({ key: `__raw.masked.${k}`, label: `Masked: ${k}` })),
+    ];
+    renderGenericMessagesTable(container, messages.map(m => ({ __raw: m })), columns);
+  } catch (e) {
+    // transient poll failure -- leave whatever was last rendered in place.
+  }
+}
+
+async function renderMonitorWorkflowsTable() {
+  const wrap = $('monitorWorkflowsTableWrap');
+  try {
+    const res = await fetch('/api/workflows');
+    const body = await res.json();
+    const workflows = body.workflows || [];
+    if (workflows.length === 0) {
+      wrap.innerHTML = '<p class="hint">No workflows yet.</p>';
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'results';
+    table.innerHTML = '<thead><tr><th></th><th>Name</th><th>Description</th><th>Connector</th>'
+      + '<th>Environment</th><th>Active</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+    let expandedKafkaWorkflow = null;
+    workflows.forEach(w => {
+      const expanded = monitorExpandedWorkflowId === w.id;
+      const tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+
+      const disclosureTd = document.createElement('td');
+      disclosureTd.textContent = expanded ? '▾' : '▸';
+      tr.appendChild(disclosureTd);
+
+      const cell = (text) => { const td = document.createElement('td'); td.textContent = text ?? '—'; return td; };
+      tr.appendChild(cell(w.name));
+      tr.appendChild(cell(w.description));
+      tr.appendChild(cell(w.connectorName));
+      tr.appendChild(cell(w.environmentName));
+
+      const activeTd = document.createElement('td');
+      activeTd.textContent = w.active ? 'Active' : '—';
+      tr.appendChild(activeTd);
+
+      tr.addEventListener('click', async () => {
+        if (workflowMsgPollTimer) { clearInterval(workflowMsgPollTimer); workflowMsgPollTimer = null; }
+        monitorExpandedWorkflowId = expanded ? null : w.id;
+        await renderMonitorWorkflowsTable();
+      });
+      tbody.appendChild(tr);
+
+      if (expanded) {
+        const detailTr = document.createElement('tr');
+        const detailTd = document.createElement('td');
+        detailTd.colSpan = 6;
+        if (w.sourceType === 'KAFKA') {
+          detailTd.innerHTML = `<div id="workflowMsgWrap-${w.id}" class="results-table-wrap"><p class="hint">Loading live messages…</p></div>`;
+          expandedKafkaWorkflow = w;
+        } else {
+          detailTd.innerHTML = `<div class="json-panel"><h4>Workflow Details</h4><pre>${
+            escapeHtml(JSON.stringify(w, null, 2))
+          }</pre></div>`;
+        }
+        detailTr.appendChild(detailTd);
+        tbody.appendChild(detailTr);
+      }
+    });
+    table.appendChild(tbody);
+    wrap.innerHTML = '';
+    wrap.appendChild(table);
+
+    if (expandedKafkaWorkflow) await startWorkflowMessagePolling(expandedKafkaWorkflow);
+  } catch (e) {
+    wrap.innerHTML = `<p class="hint">Failed to load workflows: ${escapeHtml(String(e))}</p>`;
+  }
+}
+
+async function showMonitorView(workflowId) {
+  showView('monitor');
+  setActiveMonitorTab('engine-workflows');
+  if (workflowId != null) {
+    monitorExpandedWorkflowId = Number(workflowId);
+  }
+  await renderMonitorWorkflowsTable();
+  refreshHealthTelemetry();
+  populateMcpTestTools();
+  populateMonitorTesterEnvSelect();
+  updateHealthTelemetryClock();
+  healthClockTimer = setInterval(updateHealthTelemetryClock, 100);
+}
+
+/* ==================== Monitor: Telemetry tab's Live Testing (environment-picker driven) ======= */
+function populateMonitorTesterEnvSelect() {
+  const select = $('monitorTesterEnvSelect');
+  if (ENVIRONMENTS.length === 0) {
+    select.innerHTML = '';
+    document.querySelectorAll('[id^="monitorTester-"]').forEach(el => { el.style.display = 'none'; });
+    $('monitorTesterEmpty').style.display = 'block';
+    return;
+  }
+  $('monitorTesterEmpty').style.display = 'none';
+  select.innerHTML = ENVIRONMENTS.map(e => `<option value="${e.id}">${escapeHtml(e.name)} (${escapeHtml(e.purpose)})</option>`).join('');
+  showMonitorTesterForEnvironment(select.value);
+}
+
+$('monitorTesterEnvSelect').addEventListener('change', () => {
+  showMonitorTesterForEnvironment($('monitorTesterEnvSelect').value);
+});
+
+/* ==================== Monitor: Health & Telemetry ==================== */
+function updateHealthTelemetryClock() {
+  const now = new Date();
+  const pad = (n, len) => String(n).padStart(len, '0');
+  const hh = pad(now.getUTCHours(), 2);
+  const mm = pad(now.getUTCMinutes(), 2);
+  const ss = pad(now.getUTCSeconds(), 2);
+  const ffff = pad(now.getUTCMilliseconds(), 3) + '0'; // ms has 3 real digits; padded to 4 for the requested format
+  $('healthTelemetryClock').textContent = `${hh}:${mm}:${ss}:${ffff} UTC`;
+}
+
+async function refreshHealthTelemetry() {
+  const wrap = $('healthTelemetryWrap');
+  const status = $('healthTelemetryStatus');
+  setStatus(status, 'Loading…', '');
+  try {
+    const res = await fetch('/api/health');
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    const services = body.services || [];
+    const table = document.createElement('table');
+    table.className = 'results';
+    table.innerHTML = '<thead><tr><th>Service</th><th>Status</th><th>Latency</th><th>Detail</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+    services.forEach(s => {
+      const tr = document.createElement('tr');
+      const nameTd = document.createElement('td');
+      nameTd.className = 'mono';
+      nameTd.textContent = s.service;
+      tr.appendChild(nameTd);
+
+      const statusTd = document.createElement('td');
+      const label = s.status === 'up' ? 'Up' : s.status === 'down' ? 'Down' : 'Unknown';
+      statusTd.innerHTML = `<span class="pill ${s.status}">${label}</span>`;
+      tr.appendChild(statusTd);
+
+      const latencyTd = document.createElement('td');
+      latencyTd.textContent = s.latency_ms != null ? `${s.latency_ms} ms` : '—';
+      tr.appendChild(latencyTd);
+
+      const detailTd = document.createElement('td');
+      detailTd.textContent = s.detail || '—';
+      tr.appendChild(detailTd);
+
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.innerHTML = '';
+    wrap.appendChild(table);
+
+    const counts = body.requestCounts || {};
+    const countsP = document.createElement('p');
+    countsP.className = 'hint';
+    countsP.style.marginTop = '0.5rem';
+    countsP.textContent = `Requests this session — Tokenize: ${counts.tokenize ?? 0} · `
+      + `SQL Interception: ${counts.sqlQuery ?? 0} · Kafka Produce: ${counts.kafkaProduce ?? 0}`;
+    wrap.appendChild(countsP);
+
+    setStatus(status, '', '');
+  } catch (e) {
+    setStatus(status, 'Failed: ' + e.message, 'err');
+  }
+}
+
+$('healthTelemetryRefreshBtn').addEventListener('click', refreshHealthTelemetry);
+
+/* ==================== Monitor: Test MCP Server ==================== */
+let mcpTestTools = [];
+
+async function populateMcpTestTools() {
+  const select = $('mcpTestToolSelect');
+  const status = $('mcpTestStatus');
+  select.innerHTML = '<option value="">Loading tools…</option>';
+  try {
+    const res = await fetch('/api/mcp/tools');
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    mcpTestTools = body.tools || [];
+    if (mcpTestTools.length === 0) {
+      select.innerHTML = '<option value="">No tools available</option>';
+      return;
+    }
+    select.innerHTML = mcpTestTools.map(t => `<option value="${escapeHtml(t.name)}">${escapeHtml(t.name)}</option>`).join('');
+    updateMcpTestToolDescription();
+    setStatus(status, '', '');
+  } catch (e) {
+    select.innerHTML = '<option value="">Failed to load tools</option>';
+    setStatus(status, 'Failed: ' + e.message, 'err');
+  }
+}
+
+function updateMcpTestToolDescription() {
+  const tool = mcpTestTools.find(t => t.name === $('mcpTestToolSelect').value);
+  $('mcpTestToolDescription').textContent = tool ? tool.description : '';
+}
+
+$('mcpTestToolSelect').addEventListener('change', updateMcpTestToolDescription);
+
+$('mcpTestRunBtn').addEventListener('click', async () => {
+  const status = $('mcpTestStatus');
+  const toolName = $('mcpTestToolSelect').value;
+  if (!toolName) { setStatus(status, 'Choose a tool first.', 'err'); return; }
+
+  let args;
+  try {
+    args = JSON.parse($('mcpTestArgsInput').value || '{}');
+  } catch (e) {
+    setStatus(status, 'Arguments must be valid JSON: ' + e.message, 'err');
+    return;
+  }
+
+  $('mcpTestRunBtn').disabled = true;
+  setStatus(status, 'Running… (spawns a real MCP subprocess, a couple seconds is normal)', '');
+  try {
+    const res = await fetch('/api/mcp/call', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool: toolName, args }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    $('mcpTestResultJson').textContent = JSON.stringify(body.result, null, 2);
+    $('mcpTestResultWrap').style.display = 'block';
+    setStatus(status, 'Done.', 'ok');
+  } catch (e) {
+    setStatus(status, 'Failed: ' + e.message, 'err');
+  } finally {
+    $('mcpTestRunBtn').disabled = false;
+  }
+});
 
 async function fetchApplications() {
   const res = await fetch('/api/applications');
@@ -1533,7 +2321,7 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   $('view-' + name).classList.add('active');
   document.querySelectorAll('.topnav nav a').forEach(a => a.classList.remove('active'));
-  const navName = name === 'environment-detail' ? 'environments' : name;
+  const navName = (name === 'environment-detail' || name === 'ruleset-detail') ? 'environments' : name;
   const navLink = document.querySelector(`.topnav nav a[data-nav="${navName}"]`);
   if (navLink) navLink.classList.add('active');
 }
@@ -1544,10 +2332,37 @@ function setActiveSubtab(name) {
     el.style.display = el.dataset.subtabContent === name ? 'block' : 'none';
   });
   $('addConnectorBtn').style.display = (name === 'connectors' && currentEnvironment) ? 'inline-block' : 'none';
+  $('addWorkflowBtn').style.display = (name === 'jobs' && currentEnvironment) ? 'inline-block' : 'none';
+  $('addRulesetBtn').style.display = (name === 'rulesets' && currentEnvironment) ? 'inline-block' : 'none';
 }
 
 document.querySelectorAll('.subtab-btn').forEach(btn => {
   btn.addEventListener('click', () => setActiveSubtab(btn.dataset.subtab));
+});
+
+function setActiveSettingsTab(name) {
+  document.querySelectorAll('.settings-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.settingsTab === name));
+  document.querySelectorAll('[data-settings-tab-content]').forEach(el => {
+    el.style.display = el.dataset.settingsTabContent === name ? 'block' : 'none';
+  });
+}
+
+document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => setActiveSettingsTab(btn.dataset.settingsTab));
+});
+
+// Distinct class from .subtab-btn/.settings-tab-btn on purpose -- a shared class would make the
+// generic per-environment subtabs' own click listener fire for these buttons too (dataset.subtab
+// would be undefined, incorrectly hiding everything).
+function setActiveMonitorTab(name) {
+  document.querySelectorAll('.monitor-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.monitorTab === name));
+  document.querySelectorAll('[data-monitor-tab-content]').forEach(el => {
+    el.style.display = el.dataset.monitorTabContent === name ? 'block' : 'none';
+  });
+}
+
+document.querySelectorAll('.monitor-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => setActiveMonitorTab(btn.dataset.monitorTab));
 });
 
 function showEnvironmentDetail(id) {
@@ -1569,17 +2384,10 @@ function showEnvironmentDetail(id) {
   $('panel-streaming').style.display = env.purpose === 'Streaming' ? 'block' : 'none';
   $('panel-sql-interception').style.display = env.purpose === 'SQL Interception' ? 'block' : 'none';
 
-  if (env.purpose === 'Tokenization') {
-    refreshStatus();
-  } else if (env.purpose === 'Streaming') {
+  if (env.purpose === 'Streaming') {
     // Built from window.location.hostname, not a hardcoded localhost, so this resolves
     // correctly whether the demo is opened locally or on a remote (e.g. EC2) instance.
     $('kafkaUiLink').href = `http://${window.location.hostname}:8081`;
-    kafkaSortKey = null;
-    kafkaSortAsc = true;
-    kafkaExpandedRows = new Set();
-    refreshKafkaMessages();
-    kafkaPollTimer = setInterval(refreshKafkaMessages, 2000);
   }
 }
 
@@ -1601,8 +2409,7 @@ function genericCellValue(row, key) {
 
 // Generic sortable/expandable messages table -- used by the per-connector Live Messages detail
 // view for both the default (Original/Tokenized envelope) connector and any raw-topic connector
-// (e.g. EDI270), unlike renderKafkaMessagesTable() above which is specific to the Streaming
-// environment's own always-visible Live Messages panel.
+// (e.g. EDI270), and reused by the Monitor page's Engine Workflows row-expand for the same reason.
 function renderGenericMessagesTable(container, rows, columns) {
   connMsgLastRows = rows;
   connMsgLastColumns = columns;
@@ -1751,15 +2558,35 @@ async function route() {
   const hash = location.hash || '#/environments';
   const detailMatch = hash.match(/^#\/environments\/(.+)$/);
   const connMsgMatch = hash.match(/^#\/connectors\/(.+)\/messages$/);
+  const rulesetMatch = hash.match(/^#\/rulesets\/(.+)$/);
+  const monitorWorkflowMatch = hash.match(/^#\/monitor\/(.+)$/);
   if (hash === '#/settings') {
+    clearAllPollTimers();
     showView('settings');
+    setActiveSettingsTab('general');
+    renderAlgorithmsUdfTable();
+    refreshEngineAttachStatus();
+    renderAllRuleSetsTable();
+    refreshStatus();
+    refreshMcpConfig();
+  } else if (hash === '#/monitor') {
+    clearAllPollTimers();
+    await showMonitorView();
+  } else if (monitorWorkflowMatch) {
+    clearAllPollTimers();
+    await showMonitorView(monitorWorkflowMatch[1]);
   } else if (hash === '#/credits') {
+    clearAllPollTimers();
     showView('credits');
   } else if (connMsgMatch) {
     await showConnectorMessages(connMsgMatch[1]);
+  } else if (rulesetMatch) {
+    clearAllPollTimers();
+    await showRulesetDetail(rulesetMatch[1]);
   } else if (detailMatch) {
     showEnvironmentDetail(detailMatch[1]);
   } else {
+    clearAllPollTimers();
     showView('environments');
     renderEnvironmentsTable();
   }
@@ -1773,6 +2600,402 @@ function closeModal(id) { $(id).classList.remove('active'); }
 
 document.querySelectorAll('[data-close-modal]').forEach(btn => {
   btn.addEventListener('click', () => closeModal(btn.dataset.closeModal));
+});
+
+/* ==================== Add Custom Ruleset modal ==================== */
+let addRulesetModalKey = null;
+
+function addRulesetRow(wrapId, name, table, dataType, size, algorithm) {
+  const wrap = $(wrapId);
+  let tableEl = wrap.querySelector('table');
+  if (!tableEl) {
+    tableEl = document.createElement('table');
+    tableEl.className = 'results';
+    tableEl.innerHTML = '<thead><tr><th>Column Name</th><th>Table</th><th>Data Type</th><th>Size</th>'
+      + '<th>Delphix Algorithm</th><th></th></tr></thead><tbody></tbody>';
+    wrap.innerHTML = '';
+    wrap.appendChild(tableEl);
+  }
+  const tbody = tableEl.querySelector('tbody');
+  const tr = document.createElement('tr');
+
+  const nameTd = document.createElement('td');
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.className = 'ruleset-row-name';
+  nameInput.value = name || '';
+  nameTd.appendChild(nameInput);
+  tr.appendChild(nameTd);
+
+  const tableTd = document.createElement('td');
+  const tableInput = document.createElement('input');
+  tableInput.type = 'text';
+  tableInput.className = 'ruleset-row-table';
+  tableInput.placeholder = 'e.g. customers';
+  tableInput.value = table || '';
+  tableTd.appendChild(tableInput);
+  tr.appendChild(tableTd);
+
+  const typeTd = document.createElement('td');
+  const typeInput = document.createElement('input');
+  typeInput.type = 'text';
+  typeInput.className = 'ruleset-row-type';
+  typeInput.placeholder = 'e.g. varchar(100)';
+  typeInput.value = dataType || '';
+  typeTd.appendChild(typeInput);
+  tr.appendChild(typeTd);
+
+  const sizeTd = document.createElement('td');
+  const sizeInput = document.createElement('input');
+  sizeInput.type = 'text';
+  sizeInput.className = 'ruleset-row-size';
+  sizeInput.placeholder = 'e.g. 255';
+  sizeInput.value = size || '';
+  sizeTd.appendChild(sizeInput);
+  tr.appendChild(sizeTd);
+
+  const algoTd = document.createElement('td');
+  const algoSelect = buildAlgorithmSelect(ALGORITHMS || [], algorithm);
+  algoSelect.className = 'ruleset-row-algo';
+  algoTd.appendChild(algoSelect);
+  tr.appendChild(algoTd);
+
+  const actionsTd = document.createElement('td');
+  const delBtn = document.createElement('button');
+  delBtn.type = 'button';
+  delBtn.className = 'row-actions-btn';
+  delBtn.title = 'Delete row';
+  delBtn.textContent = '✕';
+  delBtn.addEventListener('click', () => tr.remove());
+  actionsTd.appendChild(delBtn);
+  tr.appendChild(actionsTd);
+
+  tbody.appendChild(tr);
+}
+
+// Reads back whatever addRulesetRow() rows are currently in wrapId's table -- shared by the "+
+// Ruleset" modal's Save and the full-page View/Edit Ruleset's Save, since both build/edit the same
+// Column Name/Table/Data Type/Size/Delphix Algorithm row shape. A ruleset can span more than one
+// table -- each row carries its own table name rather than the ruleset having a single one.
+function collectRulesetRows(wrapId) {
+  const columns = [];
+  $(wrapId).querySelectorAll('tbody tr').forEach(tr => {
+    const colName = tr.querySelector('.ruleset-row-name').value.trim();
+    if (!colName) return;
+    columns.push({
+      name: colName,
+      table: tr.querySelector('.ruleset-row-table').value.trim() || null,
+      dataType: tr.querySelector('.ruleset-row-type').value.trim() || null,
+      size: tr.querySelector('.ruleset-row-size').value.trim() || null,
+      algorithm: tr.querySelector('.ruleset-row-algo').value || null,
+    });
+  });
+  return columns;
+}
+
+// Create-only -- editing an existing Custom Ruleset happens on the full-page View/Edit Ruleset
+// view (showRulesetDetail(), #/rulesets/{id}) instead, reached via that row's Edit action.
+// Only KAFKA connectors have a real topic to sample; only DATABASE/CRYPTO connectors have a real
+// table to introspect -- each fetch button only makes sense for its own connector category.
+function updateFetchButtonsVisibility() {
+  const connectorId = $('newRulesetConnectorSelect').value;
+  const connector = currentConnectors.find(c => String(c.id) === String(connectorId));
+  $('fetchTopicMessageBtn').style.display = (connector && connector.category === 'KAFKA') ? 'inline-block' : 'none';
+  $('fetchTableColumnsBtn').style.display = (connector && (connector.category === 'DATABASE' || connector.category === 'CRYPTO')) ? 'inline-block' : 'none';
+}
+
+function resetRulesetRowsToBlank() {
+  $('newRulesetRowsWrap').innerHTML = '';
+  addRulesetRow('newRulesetRowsWrap', '', '', '', '', null);
+  $('rulesetTopicSampleWrap').style.display = 'none';
+  $('rulesetTopicSampleJson').textContent = '';
+  $('rulesetTableSelect').style.display = 'none';
+  $('rulesetTableSelect').innerHTML = '';
+  setStatus($('fetchTopicMessageStatus'), '', '');
+  setStatus($('fetchTableColumnsStatus'), '', '');
+}
+
+async function openAddRulesetModal(key) {
+  addRulesetModalKey = key;
+  $('newRulesetName').value = '';
+  setStatus($('addRulesetStatus'), '', '');
+
+  await fetchAlgorithms();
+  const select = $('newRulesetConnectorSelect');
+  if (currentConnectors.length === 0) {
+    select.innerHTML = '<option value="">No connectors yet — add one on the Connectors tab</option>';
+  } else {
+    select.innerHTML = currentConnectors.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  }
+
+  resetRulesetRowsToBlank();
+  updateFetchButtonsVisibility();
+  updateFetchEngineRulesetBtnVisibility();
+  openModal('addRulesetModal');
+}
+
+$('newRulesetConnectorSelect').addEventListener('change', () => {
+  updateFetchButtonsVisibility();
+  resetRulesetRowsToBlank();
+});
+
+$('addRulesetRowBtn').addEventListener('click', () => addRulesetRow('newRulesetRowsWrap', '', '', '', '', null));
+
+$('fetchTopicMessageBtn').addEventListener('click', async () => {
+  const connectorId = $('newRulesetConnectorSelect').value;
+  if (!connectorId) return;
+  const status = $('fetchTopicMessageStatus');
+  $('fetchTopicMessageBtn').disabled = true;
+  setStatus(status, 'Fetching…', '');
+  try {
+    const res = await fetch(`/api/connectors/${connectorId}/topic-sample`);
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+
+    $('newRulesetRowsWrap').innerHTML = '';
+    body.fields.forEach(f => addRulesetRow('newRulesetRowsWrap', f.name, '', '', '', f.suggested_algorithm));
+
+    $('rulesetTopicSampleJson').textContent = JSON.stringify(body.sample, null, 2);
+    $('rulesetTopicSampleWrap').style.display = 'block';
+    setStatus(status, `Fetched from topic '${body.topic}' — ${body.fields.length} field(s).`, 'ok');
+  } catch (e) {
+    setStatus(status, 'Failed: ' + e.message, 'err');
+  } finally {
+    $('fetchTopicMessageBtn').disabled = false;
+  }
+});
+
+// Fetch Table Columns (DATABASE/CRYPTO connectors) -- two-step, and additive rather than
+// replace-on-fetch like Fetch Topic Message above: picking table A, then table B from the same
+// dropdown, builds one ruleset spanning both, each row remembering which table it came from.
+$('fetchTableColumnsBtn').addEventListener('click', async () => {
+  const status = $('fetchTableColumnsStatus');
+  const select = $('rulesetTableSelect');
+  $('fetchTableColumnsBtn').disabled = true;
+  setStatus(status, 'Fetching table list…', '');
+  try {
+    const res = await fetch('/api/db/tables');
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    const tables = body.tables || [];
+    if (tables.length === 0) {
+      setStatus(status, 'No tables found.', 'err');
+      return;
+    }
+    select.innerHTML = tables.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+    const connectorId = $('newRulesetConnectorSelect').value;
+    const connector = currentConnectors.find(c => String(c.id) === String(connectorId));
+    if (connector && connector.tableName && tables.includes(connector.tableName)) {
+      select.value = connector.tableName;
+    }
+    select.style.display = 'inline-block';
+    setStatus(status, 'Pick a table to load its columns.', 'ok');
+  } catch (e) {
+    setStatus(status, 'Failed: ' + e.message, 'err');
+  } finally {
+    $('fetchTableColumnsBtn').disabled = false;
+  }
+});
+
+$('rulesetTableSelect').addEventListener('change', async () => {
+  const tableName = $('rulesetTableSelect').value;
+  if (!tableName) return;
+  const status = $('fetchTableColumnsStatus');
+  setStatus(status, `Fetching columns for "${tableName}"…`, '');
+  try {
+    const res = await fetch(`/api/db/tables/${encodeURIComponent(tableName)}/columns`);
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    (body.columns || []).forEach(c => addRulesetRow('newRulesetRowsWrap', c.name, tableName, c.dataType, c.size, c.suggested_algorithm));
+    setStatus(status, `Added ${(body.columns || []).length} column(s) from "${tableName}".`, 'ok');
+  } catch (e) {
+    setStatus(status, 'Failed: ' + e.message, 'err');
+  }
+});
+
+// Best-effort: the real Delphix engine's exact database-ruleset export shape hasn't been verified
+// against a live engine from this codebase (same caveat list_engine_database_rulesets()/
+// engine_export_ruleset() already carry) -- this walks the response looking for the first array of
+// column-shaped objects, then reads whichever recognizable key variant each one actually has.
+function findColumnArrayInEngineResponse(obj) {
+  if (Array.isArray(obj)) {
+    return (obj.length > 0 && typeof obj[0] === 'object' && obj[0] !== null) ? obj : null;
+  }
+  if (obj && typeof obj === 'object') {
+    for (const key of Object.keys(obj)) {
+      const found = findColumnArrayInEngineResponse(obj[key]);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function mapEngineRulesetToRows(engineRuleset) {
+  const arr = findColumnArrayInEngineResponse(engineRuleset) || [];
+  return arr
+    .map(item => ({
+      name: item.columnName || item.fieldName || item.column || item.name || '',
+      table: item.tableName || item.table || null,
+      algorithm: item.algorithmName || item.algorithm || item.maskingAlgorithm || null,
+    }))
+    .filter(r => r.name);
+}
+
+async function updateFetchEngineRulesetBtnVisibility() {
+  try {
+    const res = await fetch('/api/engine/attach-status');
+    const body = await res.json();
+    $('fetchEngineRulesetBtn').style.display = body.attached ? 'inline-block' : 'none';
+  } catch (e) {
+    $('fetchEngineRulesetBtn').style.display = 'none';
+  }
+}
+
+let engineRulesetsForPicker = [];
+
+$('fetchEngineRulesetBtn').addEventListener('click', async () => {
+  const status = $('fetchEngineRulesetStatus');
+  const select = $('engineRulesetPickSelect');
+  setStatus(status, 'Fetching ruleset list from engine…', '');
+  try {
+    const res = await fetch('/api/engine/database-rulesets');
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    engineRulesetsForPicker = body.rulesets || [];
+    if (engineRulesetsForPicker.length === 0) {
+      setStatus(status, 'No rulesets returned from the engine.', 'err');
+      return;
+    }
+    select.innerHTML = engineRulesetsForPicker
+      .map((r, idx) => `<option value="${idx}">${escapeHtml(r.rulesetName || r.name || `Ruleset ${idx + 1}`)}</option>`)
+      .join('');
+    select.style.display = 'inline-block';
+    setStatus(status, 'Pick a ruleset to load its columns.', 'ok');
+  } catch (e) {
+    setStatus(status, 'Failed: ' + e.message, 'err');
+  }
+});
+
+$('engineRulesetPickSelect').addEventListener('change', async () => {
+  const idx = $('engineRulesetPickSelect').value;
+  if (idx === '') return;
+  const status = $('fetchEngineRulesetStatus');
+  const picked = engineRulesetsForPicker[Number(idx)];
+  const rulesetId = picked && (picked.databaseRulesetId ?? picked.id);
+  if (rulesetId == null) { setStatus(status, "Couldn't find that ruleset's id in the engine's response.", 'err'); return; }
+  setStatus(status, 'Fetching ruleset detail from engine…', '');
+  try {
+    const res = await fetch(`/api/engine/database-rulesets/${rulesetId}/export`);
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    const rows = mapEngineRulesetToRows(body);
+    if (rows.length === 0) {
+      setStatus(status, "Fetched, but couldn't recognize any columns in this engine's response shape.", 'err');
+      return;
+    }
+    rows.forEach(r => addRulesetRow('newRulesetRowsWrap', r.name, r.table, '', '', r.algorithm));
+    setStatus(status, `Added ${rows.length} column(s) from the engine.`, 'ok');
+  } catch (e) {
+    setStatus(status, 'Failed: ' + e.message, 'err');
+  }
+});
+
+$('importEngineRulesetCsvBtn').addEventListener('click', () => $('importEngineRulesetCsvFile').click());
+
+// Best-effort common Delphix ruleset-export CSV format (Table Name, Column Name, Algorithm Name,
+// with a few header-name variants tolerated) -- not a confirmed real export schema, see the hint
+// text next to this button in the modal.
+$('importEngineRulesetCsvFile').addEventListener('change', () => {
+  const file = $('importEngineRulesetCsvFile').files[0];
+  if (!file) return;
+  const status = $('fetchEngineRulesetStatus');
+  const reader = new FileReader();
+  reader.onload = () => {
+    const lines = String(reader.result).split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) { setStatus(status, 'CSV needs a header row plus at least one data row.', 'err'); return; }
+    const header = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
+    const findCol = (...variants) => header.findIndex(h => variants.includes(h));
+    const tableIdx = findCol('table name', 'table');
+    const columnIdx = findCol('column name', 'field name', 'column');
+    const algoIdx = findCol('algorithm name', 'algorithm');
+    if (columnIdx === -1) {
+      setStatus(status, `Couldn't find a "Column Name" (or "Field Name") header in this CSV.`, 'err');
+      return;
+    }
+    let added = 0;
+    lines.slice(1).forEach(line => {
+      const parts = line.split(',').map(p => p.trim().replace(/^"|"$/g, ''));
+      const name = parts[columnIdx];
+      if (!name) return;
+      addRulesetRow('newRulesetRowsWrap', name, tableIdx !== -1 ? parts[tableIdx] : '', '', '', algoIdx !== -1 ? parts[algoIdx] : null);
+      added += 1;
+    });
+    setStatus(status, `Imported ${added} column(s) from CSV.`, added > 0 ? 'ok' : 'err');
+    $('importEngineRulesetCsvFile').value = '';
+  };
+  reader.readAsText(file);
+});
+
+$('importRulesetRowsBtn').addEventListener('click', () => $('importRulesetRowsFile').click());
+
+// Freeform 5-column CSV (name,table,dataType,size,algorithm) -- there's no live schema to validate
+// column names against (a Custom Ruleset is hand-authored, not derived from a real table/topic), so
+// only the algorithm name is checked against fetchAlgorithms().
+$('importRulesetRowsFile').addEventListener('change', async () => {
+  const file = $('importRulesetRowsFile').files[0];
+  if (!file) return;
+  const algorithms = await fetchAlgorithms();
+  const validAlgorithmNames = new Set(algorithms.map(a => a.algorithm_name));
+  const status = $('addRulesetStatus');
+  const reader = new FileReader();
+  reader.onload = () => {
+    const errors = [];
+    let added = 0;
+    String(reader.result).split(/\r?\n/).forEach((line, idx) => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      const parts = trimmed.split(',').map(p => p.trim().replace(/^"|"$/g, ''));
+      if (parts.length < 1 || !parts[0]) return;
+      const [name, table, dataType, size, algorithm] = parts;
+      if (algorithm && !validAlgorithmNames.has(algorithm)) {
+        errors.push(`Line ${idx + 1}: unknown algorithm "${algorithm}"`);
+        return;
+      }
+      addRulesetRow('newRulesetRowsWrap', name, table || '', dataType || '', size || '', algorithm || null);
+      added += 1;
+    });
+    setStatus(status, errors.length > 0
+      ? errors.join(' · ')
+      : `Imported ${added} row(s).`, errors.length > 0 ? 'err' : 'ok');
+    $('importRulesetRowsFile').value = '';
+  };
+  reader.readAsText(file);
+});
+
+$('saveRulesetModalBtn').addEventListener('click', async () => {
+  const connectorId = $('newRulesetConnectorSelect').value;
+  const name = $('newRulesetName').value.trim();
+  const status = $('addRulesetStatus');
+  if (!connectorId) { setStatus(status, 'Choose a connector first.', 'err'); return; }
+  if (!name) { setStatus(status, 'Name is required.', 'err'); return; }
+
+  const columns = collectRulesetRows('newRulesetRowsWrap');
+  if (columns.length === 0) { setStatus(status, 'Add at least one column with a name.', 'err'); return; }
+
+  setStatus(status, 'Creating…', '');
+  try {
+    const res = await fetch('/api/rulesets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ connectorId, name, columns }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    closeModal('addRulesetModal');
+    await renderCustomRulesetsTable(addRulesetModalKey);
+  } catch (e) {
+    setStatus(status, 'Failed: ' + e.message, 'err');
+  }
 });
 
 $('addApplicationBtn').addEventListener('click', () => {
@@ -2007,6 +3230,35 @@ $('applyBtn').addEventListener('click', async () => {
   }
 });
 
+/* ==================== Settings: MCP Server ==================== */
+async function refreshMcpConfig() {
+  try {
+    const res = await fetch('/api/mcp-config');
+    const body = await res.json();
+    $('mcpDemoApiBase').value = body.demoApiBase || '';
+  } catch (e) {
+    // transient fetch failure -- leave whatever was last shown in place.
+  }
+}
+
+$('saveMcpConfigBtn').addEventListener('click', async () => {
+  const status = $('mcpConfigStatus');
+  const demoApiBase = $('mcpDemoApiBase').value.trim();
+  if (!demoApiBase) { setStatus(status, 'Demo API Base is required.', 'err'); return; }
+  setStatus(status, 'Saving…', '');
+  try {
+    const res = await fetch('/api/mcp-config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ demoApiBase }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    setStatus(status, 'Saved. Restart the MCP server process to pick this up.', 'ok');
+  } catch (e) {
+    setStatus(status, 'Failed: ' + e.message, 'err');
+  }
+});
+
 function describeErrors(values, body) {
   if (!body.errors) return '';
   const lines = [];
@@ -2180,110 +3432,6 @@ $('kafkaSendBtn').addEventListener('click', async () => {
   }
 });
 
-// Live Messages: a merged table (each envelope already carries both original and tokenized,
-// pre-joined by kafka-masking-bridge -- no separate-topic join needed), sortable by column and
-// expandable per row, modeled on DelphixRealTimeMasking's messages.html/messages.js.
-let kafkaMessages = [];
-let kafkaSortKey = null;
-let kafkaSortAsc = true;
-let kafkaExpandedRows = new Set();
-
-const KAFKA_COLUMNS = [
-  { key: 'original.full_name', group: 'original', label: 'Full Name' },
-  { key: 'original.email', group: 'original', label: 'Email' },
-  { key: 'original.credit_card', group: 'original', label: 'Credit Card' },
-  { key: 'tokenized.full_name', group: 'tokenized', label: 'Full Name' },
-  { key: 'tokenized.email', group: 'tokenized', label: 'Email' },
-  { key: 'tokenized.credit_card', group: 'tokenized', label: 'Credit Card' },
-];
-
-function kafkaCellValue(envelope, key) {
-  const [group, field] = key.split('.');
-  return (envelope[group] || {})[field] ?? '';
-}
-
-function renderKafkaMessagesTable() {
-  const container = $('kafkaResults');
-  if (!kafkaMessages.length) {
-    container.innerHTML = '<p class="hint">No messages yet — send one above.</p>';
-    return;
-  }
-
-  const rows = kafkaMessages.map((envelope, idx) => ({ envelope, idx }));
-  if (kafkaSortKey) {
-    rows.sort((a, b) => {
-      const av = kafkaCellValue(a.envelope, kafkaSortKey);
-      const bv = kafkaCellValue(b.envelope, kafkaSortKey);
-      if (av === bv) return 0;
-      const cmp = av < bv ? -1 : 1;
-      return kafkaSortAsc ? cmp : -cmp;
-    });
-  }
-
-  let html = `
-    <table class="results live-messages-table">
-      <thead>
-        <tr>
-          <th class="expand-col" rowspan="2"></th>
-          <th colspan="3" class="group-header group-original">Original</th>
-          <th colspan="3" class="group-header group-tokenized">Tokenized</th>
-        </tr>
-        <tr>
-          ${KAFKA_COLUMNS.map(col => {
-            const sortClass = kafkaSortKey === col.key ? (kafkaSortAsc ? 'sorted-asc' : 'sorted-desc') : '';
-            return `<th data-key="${col.key}" class="${sortClass}">${col.label}</th>`;
-          }).join('')}
-        </tr>
-      </thead>
-      <tbody>
-  `;
-  rows.forEach(({ envelope, idx }) => {
-    const expanded = kafkaExpandedRows.has(idx);
-    html += `<tr class="main-row" data-idx="${idx}">
-      <td class="expand-toggle">${expanded ? '&#9662;' : '&#9656;'}</td>
-      ${KAFKA_COLUMNS.map(col => `<td>${escapeHtml(kafkaCellValue(envelope, col.key))}</td>`).join('')}
-    </tr>`;
-    html += `<tr class="detail-row" style="${expanded ? '' : 'display:none'}">
-      <td colspan="${KAFKA_COLUMNS.length + 1}">
-        <div class="json-panels">
-          <div class="json-panel"><h4>Original</h4><pre>${escapeHtml(JSON.stringify(envelope.original, null, 2))}</pre></div>
-          <div class="json-panel"><h4>Tokenized</h4><pre>${escapeHtml(JSON.stringify(envelope.tokenized, null, 2))}</pre></div>
-        </div>
-      </td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  container.innerHTML = html;
-
-  container.querySelectorAll('th[data-key]').forEach(th => {
-    th.addEventListener('click', () => {
-      const key = th.dataset.key;
-      if (kafkaSortKey === key) { kafkaSortAsc = !kafkaSortAsc; } else { kafkaSortKey = key; kafkaSortAsc = true; }
-      renderKafkaMessagesTable();
-    });
-  });
-
-  container.querySelectorAll('tr.main-row').forEach(tr => {
-    tr.addEventListener('click', () => {
-      const idx = Number(tr.dataset.idx);
-      if (kafkaExpandedRows.has(idx)) { kafkaExpandedRows.delete(idx); } else { kafkaExpandedRows.add(idx); }
-      renderKafkaMessagesTable();
-    });
-  });
-}
-
-async function refreshKafkaMessages() {
-  try {
-    const res = await fetch('/api/kafka/messages');
-    const body = await res.json();
-    if (!res.ok || !Array.isArray(body)) return;
-    kafkaMessages = body;
-    renderKafkaMessagesTable();
-  } catch (e) {
-    // transient poll failure -- leave whatever was last rendered in place.
-  }
-}
-
 /* ==================== SQL Interception panel ==================== */
 $('sqlInterceptionRunBtn').addEventListener('click', async () => {
   setStatus($('sqlInterceptionStatus'), 'Running…', '');
@@ -2302,19 +3450,137 @@ $('sqlInterceptionRunBtn').addEventListener('click', async () => {
   }
 });
 
-/* ==================== Settings: Delphix Engine key sync ==================== */
-$('engineSyncBtn').addEventListener('click', async () => {
+/* ==================== Settings: Attach to a Delphix Continuous Compliance Engine ==================== */
+async function refreshEngineAttachStatus() {
+  try {
+    const status = await fetch('/api/engine/attach-status').then(r => r.json());
+    setStatus($('engineAttachStatus'),
+      status.attached ? `Attached to ${status.host} as ${status.username}.` : 'Not attached.',
+      status.attached ? 'ok' : '');
+  } catch (e) {
+    // transient fetch failure -- leave whatever was last shown in place.
+  }
+}
+
+$('engineAttachBtn').addEventListener('click', async () => {
   const payload = {
     host: $('engineHost').value.trim(),
     username: $('engineUsername').value.trim(),
     password: $('enginePassword').value,
   };
+  $('engineAttachBtn').disabled = true;
+  setStatus($('engineAttachStatus'), 'Attaching…', '');
+  try {
+    const res = await fetch('/api/engine/attach', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    setStatus($('engineAttachStatus'), `Attached to ${body.host} as ${body.username}.`, 'ok');
+  } catch (e) {
+    setStatus($('engineAttachStatus'), 'Failed: ' + e.message, 'err');
+  } finally {
+    $('engineAttachBtn').disabled = false;
+  }
+});
+
+/* ==================== Settings: Engine Rule Sets ==================== */
+let engineRulesetRows = [];
+let engineRulesetHost = '';
+
+function renderEngineRulesetsTable() {
+  const wrap = $('engineRulesetsWrap');
+  if (engineRulesetRows.length === 0) {
+    wrap.innerHTML = '<p class="hint">No rulesets returned.</p>';
+    return;
+  }
+  // Response shape isn't fixed/verified against a live engine (see list_engine_database_rulesets()
+  // in server.py) -- render whatever keys the first item actually has instead of assuming a schema.
+  const columns = Object.keys(engineRulesetRows[0]);
+  let html = '<table class="results"><thead><tr>';
+  columns.forEach(c => { html += `<th>${escapeHtml(c)}</th>`; });
+  html += '<th>Engine Host</th><th>Actions</th></tr></thead><tbody>';
+  engineRulesetRows.forEach((r, idx) => {
+    html += '<tr>';
+    columns.forEach(c => { html += `<td>${escapeHtml(r[c])}</td>`; });
+    html += `<td>${escapeHtml(engineRulesetHost)}</td>`;
+    html += `<td><select class="engine-ruleset-action" data-idx="${idx}">
+      <option value="" selected>Actions ▾</option>
+      <option value="export">Export</option>
+      <option value="delete">Delete</option>
+    </select></td>`;
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('.engine-ruleset-action').forEach(sel => {
+    sel.addEventListener('change', () => onEngineRulesetAction(sel));
+  });
+}
+
+async function onEngineRulesetAction(sel) {
+  const idx = Number(sel.dataset.idx);
+  const action = sel.value;
+  const row = engineRulesetRows[idx];
+  const status = $('engineRulesetsStatus');
+  if (action === 'delete') {
+    // Local-only removal -- this never calls the real engine's delete API.
+    engineRulesetRows.splice(idx, 1);
+    renderEngineRulesetsTable();
+    setStatus(status, 'Removed from this list (not deleted on the engine).', 'ok');
+    return;
+  }
+  if (action === 'export') {
+    const id = row.databaseRulesetId ?? row.id ?? idx;
+    sel.disabled = true;
+    setStatus(status, 'Exporting…', '');
+    try {
+      const res = await fetch(`/api/engine/database-rulesets/${id}/export`);
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'failed');
+      const blob = new Blob([JSON.stringify(body, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ruleset-${id}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setStatus(status, 'Exported.', 'ok');
+    } catch (e) {
+      setStatus(status, 'Failed: ' + e.message, 'err');
+    } finally {
+      sel.disabled = false;
+      sel.value = '';
+    }
+  }
+}
+
+$('engineRulesetsRefreshBtn').addEventListener('click', async () => {
+  const status = $('engineRulesetsStatus');
+  const wrap = $('engineRulesetsWrap');
+  setStatus(status, 'Loading…', '');
+  try {
+    const [rulesetsRes, attachStatus] = await Promise.all([
+      fetch('/api/engine/database-rulesets'),
+      fetch('/api/engine/attach-status').then(r => r.json()),
+    ]);
+    const body = await rulesetsRes.json();
+    if (!rulesetsRes.ok) throw new Error(body.error || 'failed');
+    engineRulesetRows = body.rulesets || [];
+    engineRulesetHost = attachStatus.host || '';
+    renderEngineRulesetsTable();
+    setStatus(status, `${engineRulesetRows.length} ruleset(s).`, engineRulesetRows.length ? 'ok' : '');
+  } catch (e) {
+    setStatus(status, 'Failed: ' + e.message, 'err');
+  }
+});
+
+/* ==================== Settings: Sync Keys ==================== */
+$('engineSyncBtn').addEventListener('click', async () => {
   $('engineSyncBtn').disabled = true;
   setStatus($('engineSyncStatus'), 'Syncing — this rebuilds tokenization-api afterward, ~20-30s…', '');
   try {
-    const res = await fetch('/api/engine/sync', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-    });
+    const res = await fetch('/api/engine/sync-key', { method: 'POST' });
     const body = await res.json();
     if (res.ok && body.success) {
       setStatus($('engineSyncStatus'), `Key synced. Config fingerprint: ${body.fingerprint}`, 'ok');
@@ -2327,6 +3593,76 @@ $('engineSyncBtn').addEventListener('click', async () => {
     $('engineSyncBtn').disabled = false;
   }
 });
+
+/* ==================== Settings: All Rule Sets (this demo's own Workflow data) ==================== */
+async function renderAllRuleSetsTable() {
+  const wrap = $('allRuleSetsWrap');
+  try {
+    const res = await fetch('/api/workflows');
+    const body = await res.json();
+    const workflows = body.workflows || [];
+    if (workflows.length === 0) {
+      wrap.innerHTML = '<p class="empty-hint">No Rule Sets yet — create one from an environment\'s Rule Sets tab.</p>';
+      return;
+    }
+    const table = document.createElement('table');
+    table.className = 'results';
+    table.innerHTML = '<thead><tr><th>Rule Set ID</th><th>Name</th><th>Connector Name</th>'
+      + '<th>Source Type</th><th>Metadata</th><th>Refresh/Save</th><th>Actions</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+    workflows.forEach(w => {
+      const tr = document.createElement('tr');
+      const cell = (text) => { const td = document.createElement('td'); td.textContent = text ?? '—'; return td; };
+      tr.appendChild(cell(w.id));
+
+      const nameTd = document.createElement('td');
+      nameTd.innerHTML = w.environmentId
+        ? `<a href="#/environments/${w.environmentId}">${escapeHtml(w.name)}</a>`
+        : escapeHtml(w.name);
+      tr.appendChild(nameTd);
+
+      tr.appendChild(cell(w.connectorName));
+      tr.appendChild(cell(w.sourceType));
+      tr.appendChild(cell(w.metadata));
+
+      const refreshTd = document.createElement('td');
+      refreshTd.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" '
+        + 'stroke="#0a7a2f" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5 5-5.5"/></svg>';
+      tr.appendChild(refreshTd);
+
+      const actionsTd = document.createElement('td');
+      if (!w.active) {
+        const activateBtn = document.createElement('button');
+        activateBtn.type = 'button';
+        activateBtn.className = 'secondary';
+        activateBtn.textContent = 'Set Active';
+        activateBtn.addEventListener('click', async () => {
+          await fetch(`/api/workflows/${w.id}/activate`, { method: 'POST' });
+          await renderAllRuleSetsTable();
+        });
+        actionsTd.appendChild(activateBtn);
+      }
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'secondary';
+      deleteBtn.style.marginLeft = '0.4rem';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.addEventListener('click', async () => {
+        await fetch(`/api/workflows/${w.id}`, { method: 'DELETE' });
+        await renderAllRuleSetsTable();
+      });
+      actionsTd.appendChild(deleteBtn);
+      tr.appendChild(actionsTd);
+
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.innerHTML = '';
+    wrap.appendChild(table);
+  } catch (e) {
+    wrap.innerHTML = `<p class="hint">Failed to load Rule Sets: ${escapeHtml(String(e))}</p>`;
+  }
+}
 
 /* ==================== Loading screen ==================== */
 function showLoadingScreen() {
